@@ -18,14 +18,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from .artifact import Artifact
+from .artifact_event_listener import ArtifactEventListener
 from pythoneda.shared.artifact_changes.events import (
     CommittedChangesPushed,
     CommittedChangesTagged,
 )
 
 
-class CommittedChangesPushedListener(Artifact):
+class CommittedChangesPushedListener(ArtifactEventListener):
     """
     Reacts to CommittedChangesTagged events.
 
@@ -45,8 +45,7 @@ class CommittedChangesPushedListener(Artifact):
         """
         super().__init__()
 
-    @classmethod
-    async def listen(cls, event: CommittedChangesPushed) -> CommittedChangesTagged:
+    async def listen(self, event: CommittedChangesPushed) -> CommittedChangesTagged:
         """
         Gets notified of a CommittedChangesPushed event.
         :param event: The event.
@@ -56,7 +55,7 @@ class CommittedChangesPushedListener(Artifact):
         """
         result = None
         CommittedChangesPushedListener.logger().debug(f"Received {event}")
-        version = await cls().tag(event.change.repository_folder)
+        version = await self.tag(event.change.repository_folder)
         if version is not None:
             result = CommittedChangesTagged(
                 version.value,

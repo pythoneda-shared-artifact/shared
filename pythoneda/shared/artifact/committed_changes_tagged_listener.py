@@ -18,12 +18,12 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from .artifact import Artifact
+from .artifact_event_listener import ArtifactEventListener
 from pythoneda.shared.artifact_changes.events import CommittedChangesTagged, TagPushed
 from pythoneda.shared.git import GitPush, GitPushFailed
 
 
-class CommittedChangesTaggedListener(Artifact):
+class CommittedChangesTaggedListener(ArtifactEventListener):
     """
     Reacts to CommittedChangesTagged events.
 
@@ -43,19 +43,18 @@ class CommittedChangesTaggedListener(Artifact):
         """
         super().__init__()
 
-    @classmethod
-    async def listen(cls, event: CommittedChangesTagged) -> TagPushed:
+    async def listen(self, event: CommittedChangesTagged) -> TagPushed:
         """
         Gets notified of a CommittedChangesTagged event.
-        Pushes the changes and emits a CommittedChangesPushed event.
+        Pushes the changes and emits a TagPushed event.
         :param event: The event.
-        :type event: pythoneda.shared.artifact_changes.events.StagedChangesCommitted
+        :type event: pythoneda.shared.artifact_changes.events.CommittedChangesTagged
         :return: An event notifying the changes have been pushed.
-        :rtype: pythoneda.shared.artifact_changes.events.CommittedChangesPushed
+        :rtype: pythoneda.shared.artifact_changes.events.TagPushed
         """
         result = None
         CommittedChangesTaggedListener.logger().debug(f"Received {event}")
-        pushed = await cls().push_tags(event.repository_folder)
+        pushed = await self.push_tags(event.repository_folder)
         if pushed:
             result = TagPushed(
                 event.tag,
@@ -65,6 +64,7 @@ class CommittedChangesTaggedListener(Artifact):
                 event.repository_folder,
                 event.id,
             )
+            CommittedChangesTaggedListener.logger().debug(f"Emitting {result}")
         return result
 
     async def push_tags(self, folder: str) -> bool:

@@ -18,7 +18,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from .artifact import Artifact
+from .artifact_event_listener import ArtifactEventListener
 from pythoneda.shared.artifact_changes.events import (
     StagedChangesCommitted,
     CommittedChangesPushed,
@@ -26,7 +26,7 @@ from pythoneda.shared.artifact_changes.events import (
 from pythoneda.shared.git import GitPush, GitPushFailed
 
 
-class StagedChangesCommittedListener(Artifact):
+class StagedChangesCommittedListener(ArtifactEventListener):
     """
     Reacts to StagedChangesCommitted events.
 
@@ -46,8 +46,7 @@ class StagedChangesCommittedListener(Artifact):
         """
         super().__init__()
 
-    @classmethod
-    async def listen(cls, event: StagedChangesCommitted) -> CommittedChangesPushed:
+    async def listen(self, event: StagedChangesCommitted) -> CommittedChangesPushed:
         """
         Gets notified of a StagedChangesCommitted event.
         :param event: The event.
@@ -57,7 +56,7 @@ class StagedChangesCommittedListener(Artifact):
         """
         result = None
         StagedChangesCommittedListener.logger().debug(f"Received {event}")
-        pushed = await cls().push(event.change.repository_folder)
+        pushed = await self.push(event.change.repository_folder)
         if pushed:
             result = CommittedChangesPushed(event.change, event.commit, event.id)
         return result

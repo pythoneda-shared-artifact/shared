@@ -18,7 +18,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from .artifact import Artifact
+from .artifact_event_listener import ArtifactEventListener
 import os
 from pythoneda.shared.artifact_changes import Change
 from pythoneda.shared.artifact_changes.events import ArtifactChangesCommitted, TagPushed
@@ -32,7 +32,7 @@ from pythoneda.shared.git import (
 import requests
 
 
-class TagPushedListener(Artifact):
+class TagPushedListener(ArtifactEventListener):
     """
     Reacts to TagPushed events.
 
@@ -52,8 +52,7 @@ class TagPushedListener(Artifact):
         """
         super().__init__()
 
-    @classmethod
-    async def listen(cls, event: TagPushed) -> ArtifactChangesCommitted:
+    async def listen(self, event: TagPushed) -> ArtifactChangesCommitted:
         """
         Gets notified of a TagPushed event.
         Pushes the changes and emits a TagPushed event.
@@ -63,8 +62,8 @@ class TagPushedListener(Artifact):
         :rtype: pythoneda.shared.artifact_changes.events.ArtifactChangesCommitted
         """
         result = None
-        Artifact.logger().debug(f"Received {event}")
-        result = await cls().update_artifact_version(event)
+        TagPushedListener.logger().debug(f"Received {event}")
+        result = await self.update_artifact_version(event)
         return result
 
     async def update_artifact_version(
@@ -100,6 +99,7 @@ class TagPushedListener(Artifact):
 
         if flake is not None:
             # update the version and hash in the flake of the artifact repository
+            print(f"**** flake -> {flake}")
             version_updated = await self.update_version_in_flake(event.tag, flake)
             if version_updated:
                 hash, change = await self.commit_artifact_changes(
@@ -139,8 +139,8 @@ class TagPushedListener(Artifact):
             if response.status_code == 200:
                 result = True
         except requests.RequestException as err:
-            Artifact.logger().error(f"Could not check if {url} exists")
-            Artifact.logger().error(err)
+            TagPushedListener.logger().error(f"Could not check if {url} exists")
+            TagPushedListener.logger().error(err)
 
         return result
 

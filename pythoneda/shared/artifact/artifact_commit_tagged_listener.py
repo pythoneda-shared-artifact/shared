@@ -18,7 +18,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from .artifact import Artifact
+from .artifact_event_listener import ArtifactEventListener
 from pythoneda.shared.artifact_changes.events import (
     ArtifactCommitTagged,
     ArtifactTagPushed,
@@ -26,7 +26,7 @@ from pythoneda.shared.artifact_changes.events import (
 from pythoneda.shared.git import GitPush, GitPushFailed
 
 
-class ArtifactCommitTaggedListener(Artifact):
+class ArtifactCommitTaggedListener(ArtifactEventListener):
     """
     Reacts to ArtifactCommitTagged events.
 
@@ -46,8 +46,7 @@ class ArtifactCommitTaggedListener(Artifact):
         """
         super().__init__()
 
-    @classmethod
-    async def listen(cls, event: ArtifactCommitTagged) -> ArtifactTagPushed:
+    async def listen(self, event: ArtifactCommitTagged) -> ArtifactTagPushed:
         """
         Gets notified of an ArtifactCommitTagged event.
         :param event: The event.
@@ -56,8 +55,8 @@ class ArtifactCommitTaggedListener(Artifact):
         :rtype: pythoneda.shared.artifact_commit.events.ArtifactTagPushed
         """
         result = None
-        Artifact.logger().debug(f"Received {event}")
-        result = await cls().push_tag_artifact(event)
+        ArtifactCommitTaggedListener.logger().debug(f"Received {event}")
+        result = await self.push_tag_artifact(event)
         return result
 
     async def push_tag_artifact(self, event: ArtifactCommitTagged) -> ArtifactTagPushed:

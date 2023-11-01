@@ -18,120 +18,238 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from .artifact_changes_committed_listener import ArtifactChangesCommittedListener
+from .artifact_commit_pushed_listener import ArtifactCommitPushedListener
+from .artifact_commit_tagged_listener import ArtifactCommitTaggedListener
+from .artifact_tag_pushed_listener import ArtifactTagPushedListener
+from .committed_changes_pushed_listener import CommittedChangesPushedListener
+from .committed_changes_tagged_listener import CommittedChangesTaggedListener
+from .staged_changes_committed_listener import StagedChangesCommittedListener
+from .tag_pushed_listener import TagPushedListener
+import abc
 import os
-from pythoneda import BaseObject
-from pythoneda.shared.git import (
-    GitAdd,
-    GitAddFailed,
-    GitCommit,
-    GitCommitFailed,
-    GitRepo,
-    GitTag,
-    GitTagFailed,
-    Version,
+from pythoneda import EventListener, listen
+
+from pythoneda.shared.artifact_changes.events import (
+    ArtifactChangesCommitted,
+    ArtifactCommitPushed,
+    ArtifactCommitTagged,
+    ArtifactTagPushed,
+    CommittedChangesPushed,
+    CommittedChangesTagged,
+    StagedChangesCommitted,
+    TagPushed,
 )
-import subprocess
+from pythoneda.shared.git import GitRepo
 
 
-class Artifact(BaseObject):
+class Artifact(EventListener, abc.ABC):
     """
-    Provides Artifact-related operations.
+    Represents Artifacts.
 
     Class name: Artifact
 
     Responsibilities:
-        - Provide operations to listeners.
+        - Provide a model for Artifacts.
 
     Collaborators:
         - None
     """
 
-    def __init__(self):
+    def __init__(self, repositoryFolder: str):
         """
         Creates a new Artifact instance.
         """
         super().__init__()
+        self._repository_folder = repositoryFolder
 
-    def own_flake(self, folder: str) -> bool:
+    @property
+    def repository_folder(self) -> str:
         """
-        Checks if the repository has its own flake, so it doesn't have an artifact space.
-        :param folder: The repository folder.
-        :type folder: str
-        :return: True in such case.
-        :rtype: bool
+        Retrieves the repository folder.
+        :return: Such location.
+        :rtype: str
         """
-        return os.path.exists(os.path.join(folder, "flake.nix"))
+        return self._repository_folder
 
-    async def update_version_in_flake(self, version: str, flake: str) -> bool:
+    @classmethod
+    def find_out_version(cls, repositoryFolder: str) -> str:
         """
-        Updates the version in given flake file.
-        :param version: The new version.
-        :type version: str
-        :param flake: The flake file.
-        :type flake: str
-        :return: True if the flake could be updated.
-        :rtype: bool
+        Retrieves the version of the flake under given folder.
+        :param repositoryFolder: The repository folder.
+        :type repositoryFolder: str
+        :return: The version
+        :rtype: str
         """
-        result = True
-        home_path = os.environ.get("HOME")
-        try:
-            subprocess.run(
-                [
-                    f"{home_path}/bin/update-sha256-nix-flake.sh",
-                    "-f",
-                    flake,
-                    "-V",
-                    version,
-                ],
-                check=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                text=True,
-                cwd=os.path.dirname(flake),
-            )
-        except subprocess.CalledProcessError as err:
-            Artifact.logger().error(err.stdout)
-            Artifact.logger().error(err.stderr)
-            result = False
+        return GitTag(repositoryFolder).current_tag()
 
-        return True
+    @classmethod
+    def find_out_repository_folder(cls, otherRepositoryFolder: str) -> str:
+        """
+        Retrieves the own repository folder based on a convention, assuming
+        given folder holds another PythonEDA project.
+        :param otherRepositoryFolder: The other repository folder.
+        :type otherRepositoryFolder: str
+        :return: The repository folder, or None if not found.
+        :rtype: str
+        """
+        parent = os.path.dirname(otherRepositoryFolder)
+        grand_parent = os.path.dirname(parent)
+        git_repo = GitRepo.from_folder(otherRepositoryFolder)
+        owner, repo = git_repo.repo_owner_and_repo_name()
+        candidate = os.path.join(grand_parent, owner, repo)
+        if os.path.isdir(os.path.join(candidate, ".git")) and (
+            GitRepo(candidate).url == cls.repo_url
+        ):
+            result = candidate
+        return result
 
-    async def tag(self, folder: str) -> Version:
+    @classmethod
+    @property
+    def org(cls) -> str:
         """
-        Creates a tag and emits a CommittedChangesTagged event.
-        :param folder: The repository folder.
-        :type folder: str
-        :return: The tagged version.
-        :rtype: pythoneda.shared.git.Version
+        Retrieves the organization.
+        :return: Such information.
+        :rtype: str
         """
-        git_repo = GitRepo.from_folder(folder)
-        result = git_repo.increase_patch(True)
-        # check if there's a flake in the root folder.
-        if self.own_flake(folder):
-            flake = os.path.join(folder, "flake.nix")
-            # if there's a flake, change and commit the version change before tagging.
-            version_updated = await self.update_version_in_flake(result.value, flake)
-            if version_updated:
-                try:
-                    GitAdd(folder).add(flake)
-                    GitCommit(folder).commit(f"Updated version to {result.value}")
-                    GitTag(folder).tag(result)
-                except GitAddFailed as err:
-                    CommittedChangesPushedListener.logger().error(
-                        "Could not stage changes"
-                    )
-                    CommittedChangesPushedListener.logger().error(err)
-                    result = None
-                except GitCommitFailed as err:
-                    CommittedChangesPushedListener.logger().error(
-                        "Could not commit staged changes"
-                    )
-                    CommittedChangesPushedListener.logger().error(err)
-                    result = None
-                except GitTagFailed as err:
-                    CommittedChangesPushedListener.logger().error(
-                        "Could not create tag"
-                    )
-                    CommittedChangesPushedListener.logger().error(err)
-                    result = None
+        result, _ = GitRepo.extract_repo_owner_and_repo_name(cls.url)
+        return result
+
+    @classmethod
+    @property
+    def repo(cls) -> str:
+        """
+        Retrieves the repo.
+        :return: Such information.
+        :rtype: str
+        """
+        _, result = GitRepo.extract_repo_owner_and_repo_name(cls.url)
+        return result
+
+    @classmethod
+    @property
+    @abc.abstractmethod
+    def url(cls) -> str:
+        """
+        Retrieves the url.
+        :return: Such url.
+        :rtype: str
+        """
+        pass
+
+    @classmethod
+    @listen(StagedChangesCommitted)
+    async def listen_StagedChangesCommitted(
+        cls, event: StagedChangesCommitted
+    ) -> CommittedChangesPushed:
+        """
+        Gets notified of a StagedChangesCommitted event.
+        :param event: The event.
+        :type event: pythoneda.shared.artifact_changes.events.StagedChangesCommitted
+        :return: An event notifying the commit has been pushed.
+        :rtype: pythoneda.shared.artifact_changes.events.CommittedChangesPushed
+        """
+        return await StagedChangesCommittedListener().listen(event)
+
+    @classmethod
+    @listen(CommittedChangesPushed)
+    async def listen_CommittedChangesPushed(
+        cls, event: CommittedChangesPushed
+    ) -> CommittedChangesTagged:
+        """
+        Gets notified of a CommittedChangesPushed event.
+        :param event: The event.
+        :type event: pythoneda.shared.artifact_changes.events.CommitedChangesPushed
+        :return: An event notifying the changes have been pushed.
+        :rtype: pythoneda.shared.artifact_changes.events.CommittedChangesTagged
+        """
+        return await CommittedChangesPushedListener().listen(event)
+
+    @classmethod
+    @listen(CommittedChangesTagged)
+    async def listen_CommittedChangesTagged(
+        cls, event: CommittedChangesTagged
+    ) -> TagPushed:
+        """
+        Gets notified of a CommittedChangesTagged event.
+        Pushes the changes and emits a TagPushed event.
+        :param event: The event.
+        :type event: pythoneda.shared.artifact_changes.events.CommittedChangesTagged
+        :return: An event notifying the changes have been pushed.
+        :rtype: pythoneda.shared.artifact_changes.events.TagPushed
+        """
+        return await CommittedChangesTaggedListener().listen(event)
+
+    @classmethod
+    @listen(TagPushed)
+    async def listen_TagPushed(cls, event: TagPushed) -> ArtifactChangesCommitted:
+        """
+        Gets notified of a TagPushed event.
+        Pushes the changes and emits a TagPushed event.
+        :param event: The event.
+        :type event: pythoneda.shared.artifact_changes.events.TagPushed
+        :return: An event notifying the changes in the artifact have been committed.
+        :rtype: pythoneda.shared.artifact_changes.events.ArtifactChangesCommitted
+        """
+        return await TagPushedListener().listen(event)
+
+    @classmethod
+    @listen(ArtifactChangesCommitted)
+    async def listen_ArtifactChangesCommitted(
+        cls, event: TagPushed
+    ) -> ArtifactCommitPushed:
+        """
+        Gets notified of an ArtifactChangesCommitted event.
+        :param event: The event.
+        :type event: pythoneda.shared.artifact_changes.events.ArtifactChangesCommitted
+        :return: An event notifying the commit in the artifact repository has been pushed.
+        :rtype: pythoneda.shared.artifact_changes.events.ArtifactCommitPushed
+        """
+        return await ArtifactChangesCommittedListener().listen(event)
+
+    @classmethod
+    @listen(ArtifactCommitPushed)
+    async def listen_ArtifactCommitPushed(
+        cls, event: ArtifactCommitPushed
+    ) -> ArtifactCommitTagged:
+        """
+        Gets notified of an ArtifactCommitPushed event.
+        :param event: The event.
+        :type event: pythoneda.shared.artifact_changes.events.ArtifactCommitPushed
+        :return: An event notifying the commit in the artifact repository has been tagged.
+        :rtype: pythoneda.shared.artifact_changes.events.ArtifactCommitTagged
+        """
+        return await ArtifactCommitPushedListener().listen(event)
+
+    @classmethod
+    @listen(ArtifactCommitTagged)
+    async def listen_ArtifactCommitTagged(
+        cls, event: ArtifactCommitTagged
+    ) -> ArtifactTagPushed:
+        """
+        Gets notified of an ArtifactCommitTagged event.
+        :param event: The event.
+        :type event: pythoneda.shared.artifact_commit.events.ArtifactCommitTagged
+        :return: An event notifying the tag in the artifact has been pushed.
+        :rtype: pythoneda.shared.artifact_commit.events.ArtifactTagPushed
+        """
+        return await ArtifactCommitTaggedListener().listen(event)
+
+    @classmethod
+    @listen(ArtifactTagPushed)
+    async def listen_ArtifactTagPushed(
+        cls, event: ArtifactTagPushed
+    ) -> ArtifactChangesCommitted:
+        """
+        Listens to ArtifactTagPushed event to check if affects any of its dependencies.
+        In such case, it creates a commit with the dependency change.
+        :param event: The event.
+        :type event: pythoneda.shared.artifact_changes.events.ArtifactTagPushed
+        :return: An event representing the commit.
+        :rtype: pythoneda.shared.artifact_changes.events.ArtifactChangesCommitted
+        """
+        result = None
+        folder = cls.find_out_repository_folder(event.repository_folder)
+        if folder is not None:
+            result = await ArtifactTagPushedListener().listen(event, folder)
         return result
