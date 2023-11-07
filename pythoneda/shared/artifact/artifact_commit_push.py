@@ -19,7 +19,8 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from .artifact_event_listener import ArtifactEventListener
-from pythoneda.shared.artifact_changes.events import (
+from pythoneda.shared.artifact.events import Change
+from pythoneda.shared.artifact.events.artifact import (
     ArtifactChangesCommitted,
     ArtifactCommitPushed,
 )
@@ -36,8 +37,8 @@ class ArtifactCommitPush(ArtifactEventListener):
         - React to ArtifactChangesCommitted events.
 
     Collaborators:
-        - pythoneda.shared.artifact_changes.events.ArtifactChangesCommitted
-        - pythoneda.shared.artifact_changes.events.CommittedChangesPushed
+        - pythoneda.shared.artifact.events.artifact.ArtifactChangesCommitted
+        - pythoneda.shared.artifact.events.CommittedChangesPushed
     """
 
     def __init__(self, folder: str):
@@ -53,9 +54,9 @@ class ArtifactCommitPush(ArtifactEventListener):
         """
         Gets notified of an ArtifactChangesCommitted event.
         :param event: The event.
-        :type event: pythoneda.shared.artifact_changes.events.ArtifactChangesCommitted
+        :type event: pythoneda.shared.artifact.events.artifact.ArtifactChangesCommitted
         :return: An event notifying the commit in the artifact repository has been pushed.
-        :rtype: pythoneda.shared.artifact_changes.events.ArtifactCommitPushed
+        :rtype: pythoneda.shared.artifact.events.artifact.ArtifactCommitPushed
         """
         if not self.enabled:
             return None
@@ -69,9 +70,9 @@ class ArtifactCommitPush(ArtifactEventListener):
         """
         Push a commit in an artifact repository.
         :param event: The event.
-        :type event: pythoneda.shared.artifact_changes.events.ArtifactCommitPushed
+        :type event: pythoneda.shared.artifact.events.artifact.ArtifactCommitPushed
         :return: An event notifying the commit in the artifact repository has been pushed.
-        :rtype: pythoneda.shared.artifact_changes.events.ArtifactCommitPushed
+        :rtype: pythoneda.shared.artifact.events.artifact.ArtifactCommitPushed
         """
         result = None
         try:

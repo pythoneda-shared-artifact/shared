@@ -19,7 +19,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from .artifact_event_listener import ArtifactEventListener
-from pythoneda.shared.artifact_changes.events import CommittedChangesTagged, TagPushed
+from pythoneda.shared.artifact.events import CommittedChangesTagged, TagPushed
 from pythoneda.shared.git import GitPush, GitPushFailed
 
 
@@ -51,9 +51,9 @@ class TagPush(ArtifactEventListener):
         Gets notified of a CommittedChangesTagged event.
         Pushes the changes and emits a TagPushed event.
         :param event: The event.
-        :type event: pythoneda.shared.artifact_changes.events.CommittedChangesTagged
+        :type event: pythoneda.shared.artifact.events.CommittedChangesTagged
         :return: An event notifying the changes have been pushed.
-        :rtype: pythoneda.shared.artifact_changes.events.TagPushed
+        :rtype: pythoneda.shared.artifact.events.TagPushed
         """
         if not self.enabled:
             return None

@@ -19,7 +19,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from .artifact_event_listener import ArtifactEventListener
-from pythoneda.shared.artifact_changes.events import (
+from pythoneda.shared.artifact.events.artifact import (
     ArtifactCommitTagged,
     ArtifactTagPushed,
 )
@@ -36,8 +36,8 @@ class ArtifactTagPush(ArtifactEventListener):
         - React to ArtifactCommitTagged events.
 
     Collaborators:
-        - pythoneda.shared.artifact_commit.events.ArtifactCommitTagged
-        - pythoneda.shared.artifact_commit.events.ArtifactTagPushed
+        - pythoneda.shared.artifact.events.artifact.ArtifactCommitTagged
+        - pythoneda.shared.artifact.events.artifact.ArtifactTagPushed
     """
 
     def __init__(self, folder: str):
@@ -53,9 +53,9 @@ class ArtifactTagPush(ArtifactEventListener):
         """
         Gets notified of an ArtifactCommitTagged event.
         :param event: The event.
-        :type event: pythoneda.shared.artifact_commit.events.ArtifactCommitTagged
+        :type event: pythoneda.shared.artifact.events.artifact.ArtifactCommitTagged
         :return: An event notifying the tag in the artifact has been pushed.
-        :rtype: pythoneda.shared.artifact_commit.events.ArtifactTagPushed
+        :rtype: pythoneda.shared.artifact.events.artifact.ArtifactTagPushed
         """
         result = None
         ArtifactTagPush.logger().debug(f"Received {event}")
@@ -66,9 +66,9 @@ class ArtifactTagPush(ArtifactEventListener):
         """
         Tags an artifact repository.
         :param event: The event.
-        :type event: pythoneda.shared.artifact_commit.events.ArtifactCommitCommitted
+        :type event: pythoneda.shared.artifact.events.artifact.ArtifactCommitCommitted
         :return: An event notifying the tag in the artifact has been pushed.
-        :rtype: pythoneda.shared.artifact_commit.events.ArtifactTagPushed
+        :rtype: pythoneda.shared.artifact.events.artifact.ArtifactTagPushed
         """
         if not self.enabled:
             return None

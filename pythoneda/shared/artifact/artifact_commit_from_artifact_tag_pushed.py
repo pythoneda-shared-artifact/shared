@@ -20,7 +20,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from .artifact import Artifact
 from .artifact_event_listener import ArtifactEventListener
-from pythoneda.shared.artifact_changes.events import (
+from pythoneda.shared.artifact.events import Change
+from pythoneda.shared.artifact.events.artifact import (
     ArtifactChangesCommitted,
     ArtifactTagPushed,
 )
@@ -48,7 +49,7 @@ class ArtifactCommitFromArtifactTagPushed(ArtifactEventListener):
         - Receive ArtifactTagPushed events and react accordingly.
 
     Collaborators:
-        - pythoneda.shared.artifact_changes.events.ArtifactTagPushed
+        - pythoneda.shared.artifact.events.artifact.ArtifactTagPushed
     """
 
     def __init__(self, folder: str):
@@ -67,11 +68,11 @@ class ArtifactCommitFromArtifactTagPushed(ArtifactEventListener):
         Reacts upon given ArtifactTagPushed event to check if affects any of its dependencies.
         In such case, it creates a commit with the dependency change.
         :param event: The event.
-        :type event: pythoneda.shared.artifact_changes.events.ArtifactTagPushed
+        :type event: pythoneda.shared.artifact.events.artifact.ArtifactTagPushed
         :param artifact: The artifact instance.
         :type artifact: pythoneda.shared.artifact.Artifact
         :return: An event representing the commit.
-        :rtype: pythoneda.shared.artifact_changes.events.ArtifactChangesCommitted
+        :rtype: pythoneda.shared.artifact.events.artifact.ArtifactChangesCommitted
         """
         if not self.enabled:
             return None

@@ -1,7 +1,7 @@
 """
-pythoneda/shared/artifact/staged_changes_committed_listener.py
+pythoneda/shared/artifact/commit_push.py
 
-This file declares the StagedChangesCommittedListener class.
+This file declares the CommitPush class.
 
 Copyright (C) 2023-today rydnr's pythoneda-shared-artifact/shared
 
@@ -19,7 +19,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from .artifact_event_listener import ArtifactEventListener
-from pythoneda.shared.artifact_changes.events import (
+from pythoneda.shared.artifact.events import (
     StagedChangesCommitted,
     CommittedChangesPushed,
 )
@@ -36,8 +36,8 @@ class CommitPush(ArtifactEventListener):
         - React to StagedChangesCommitted events.
 
     Collaborators:
-        - pythoneda.shared.artifact_changes.events.StagedChangesCommitted
-        - pythoneda.shared.artifact_changes.events.CommittedChangesPushed
+        - pythoneda.shared.artifact.events.StagedChangesCommitted
+        - pythoneda.shared.artifact.events.CommittedChangesPushed
     """
 
     def __init__(self, folder: str):
@@ -53,9 +53,9 @@ class CommitPush(ArtifactEventListener):
         """
         Gets notified of a StagedChangesCommitted event.
         :param event: The event.
-        :type event: pythoneda.shared.artifact_changes.events.StagedChangesCommitted
+        :type event: pythoneda.shared.artifact.events.StagedChangesCommitted
         :return: An event notifying the commit has been pushed.
-        :rtype: pythoneda.shared.artifact_changes.events.CommittedChangesPushed
+        :rtype: pythoneda.shared.artifact.events.CommittedChangesPushed
         """
         if not self.enabled:
             return None

@@ -20,8 +20,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from .artifact_event_listener import ArtifactEventListener
 import os
-from pythoneda.shared.artifact_changes import Change
-from pythoneda.shared.artifact_changes.events import ArtifactChangesCommitted, TagPushed
+from pythoneda.shared.artifact.events import Change, TagPushed
+from pythoneda.shared.artifact.events.artifact import ArtifactChangesCommitted
 from pythoneda.shared.git import (
     GitAdd,
     GitAddFailed,
@@ -42,8 +42,8 @@ class ArtifactCommitFromTagPushed(ArtifactEventListener):
         - React to TagPushed events.
 
     Collaborators:
-        - pythoneda.shared.artifact_changes.events.TagPushed
-        - pythoneda.shared.artifact_changes.events.ArtifactChangesCommitted
+        - pythoneda.shared.artifact.events.TagPushed
+        - pythoneda.shared.artifact.events.artifact.ArtifactChangesCommitted
     """
 
     def __init__(self, folder: str):
@@ -60,9 +60,9 @@ class ArtifactCommitFromTagPushed(ArtifactEventListener):
         Gets notified of a TagPushed event.
         Pushes the changes and emits a TagPushed event.
         :param event: The event.
-        :type event: pythoneda.shared.artifact_changes.events.TagPushed
+        :type event: pythoneda.shared.artifact.events.TagPushed
         :return: An event notifying the changes in the artifact have been committed.
-        :rtype: pythoneda.shared.artifact_changes.events.ArtifactChangesCommitted
+        :rtype: pythoneda.shared.artifact.events.artifact.ArtifactChangesCommitted
         """
         if not self.enabled:
             return None
@@ -77,9 +77,9 @@ class ArtifactCommitFromTagPushed(ArtifactEventListener):
         """
         Conditionally updates the artifact version.
         :param event: The event.
-        :type event: pythoneda.shared.artifact_changes.events.TagPushed
+        :type event: pythoneda.shared.artifact.events.TagPushed
         :return: An event notifying the changes in the artifact have been committed.
-        :rtype: pythoneda.shared.artifact_changes.events.ArtifactChangesCommitted
+        :rtype: pythoneda.shared.artifact.events.artifact.ArtifactChangesCommitted
         """
         result = None
         artifact_repo = None
@@ -180,7 +180,7 @@ class ArtifactCommitFromTagPushed(ArtifactEventListener):
         :param domainTag: The tag of the domain repository triggering the flake.nix changes.
         :type domainTag: str
         :return: A tuple with the commit and the change, or (None, None).
-        :rtype: (str, pythoneda.shared.artifact_changes.Change)
+        :rtype: (str, pythoneda.shared.artifact.events.Change)
         """
         result = (None, None)
         try:

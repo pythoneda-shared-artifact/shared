@@ -33,7 +33,6 @@ from .artifact_commit_push import ArtifactCommitPush
 from .artifact_commit_tag import ArtifactCommitTag
 from .artifact_event_listener import ArtifactEventListener
 from .artifact_tag_push import ArtifactTagPush
-from .change import Change
 from .commit_push import CommitPush
 from .commit_tag import CommitTag
 from .hexagonal_layer import HexagonalLayer

@@ -19,7 +19,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from .artifact_event_listener import ArtifactEventListener
-from pythoneda.shared.artifact_changes.events import (
+from pythoneda.shared.artifact.events import (
     CommittedChangesPushed,
     CommittedChangesTagged,
 )
@@ -35,8 +35,8 @@ class CommitTag(ArtifactEventListener):
         - React to CommittedChangesPushed events.
 
     Collaborators:
-        - pythoneda.shared.artifact_changes.events.CommittedChangesPushed
-        - pythoneda.shared.artifact_changes.events.CommittedChangesTagged
+        - pythoneda.shared.artifact.events.CommittedChangesPushed
+        - pythoneda.shared.artifact.events.CommittedChangesTagged
     """
 
     def __init__(self, folder: str):
@@ -52,9 +52,9 @@ class CommitTag(ArtifactEventListener):
         """
         Gets notified of a CommittedChangesPushed event.
         :param event: The event.
-        :type event: pythoneda.shared.artifact_changes.events.CommitedChangesPushed
+        :type event: pythoneda.shared.artifact.events.CommitedChangesPushed
         :return: An event notifying the changes have been pushed.
-        :rtype: pythoneda.shared.artifact_changes.events.CommittedChangesTagged
+        :rtype: pythoneda.shared.artifact.events.CommittedChangesTagged
         """
         if not self.enabled:
             return None
