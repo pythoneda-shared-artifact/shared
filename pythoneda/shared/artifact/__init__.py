@@ -22,15 +22,33 @@ __path__ = __import__("pkgutil").extend_path(__path__, __name__)
 
 from .architectural_role import ArchitecturalRole
 from .artifact import Artifact
-from .artifact_changes_committed_listener import ArtifactChangesCommittedListener
-from .artifact_commit_pushed_listener import ArtifactCommitPushedListener
-from .artifact_commit_tagged_listener import ArtifactCommitTaggedListener
+from .artifact_commit_from_artifact_tag_pushed import (
+    ArtifactCommitFromArtifactTagPushed,
+)
+from .artifact_commit_from_tag_pushed import ArtifactCommitFromTagPushed
+from .artifact_commit_from_artifact_tag_pushed import (
+    ArtifactCommitFromArtifactTagPushed,
+)
+from .artifact_commit_push import ArtifactCommitPush
+from .artifact_commit_tag import ArtifactCommitTag
 from .artifact_event_listener import ArtifactEventListener
-from .artifact_tag_pushed_listener import ArtifactTagPushedListener
-from .committed_changes_pushed_listener import CommittedChangesPushedListener
-from .committed_changes_tagged_listener import CommittedChangesTaggedListener
+from .artifact_tag_push import ArtifactTagPush
+from .change import Change
+from .commit_push import CommitPush
+from .commit_tag import CommitTag
 from .hexagonal_layer import HexagonalLayer
+from .local_artifact import LocalArtifact
 from .pescio_space import PescioSpace
 from .python_package import PythonPackage
-from .staged_changes_committed_listener import StagedChangesCommittedListener
-from .tag_pushed_listener import TagPushedListener
+from .tag_push import TagPush
+
+# regular flow:
+# 0. (commit)
+# 1. CommitPush
+# 2. CommitTag
+# 3. TagPush
+# 4. ArtifactCommitFromTagPushed
+# 5. ArtifactCommitPush
+# 6. ArtifactCommitTag
+# 7. ArtifactTagPush
+# 8. ArtifactCommitFromArtifactTagPushed

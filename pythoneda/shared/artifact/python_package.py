@@ -19,13 +19,13 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from .architectural_role import ArchitecturalRole
+from .artifact import Artifact
 from .hexagonal_layer import HexagonalLayer
 from .pescio_space import PescioSpace
-from pythoneda.shared.nix_flake import NixFlake
 from typing import List
 
 
-class PythonPackage(NixFlake):
+class PythonPackage(Artifact):
     """
     Represents a Python package.
 

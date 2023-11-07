@@ -19,7 +19,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import os
-from pythoneda import BaseObject
+from pythoneda import attribute, BaseObject
 from pythoneda.shared.git import (
     GitAdd,
     GitAddFailed,
@@ -46,11 +46,51 @@ class ArtifactEventListener(BaseObject):
         - None
     """
 
-    def __init__(self):
+    def __init__(self, folder: str):
         """
         Creates a new ArtifactEventListener instance.
         """
         super().__init__()
+        self._repository_folder = folder
+        self._enabled = False
+
+    @property
+    @attribute
+    def repository_folder(self) -> str:
+        """
+        Retrieves the repository folder of the artifact.
+        :return: Such folder.
+        :rtype: str
+        """
+        return self._repository_folder
+
+    @property
+    def enabled(self) -> bool:
+        """
+        Checks if this listener is enabled or not.
+        :return: Such flag.
+        :rtype: bool
+        """
+        return self._enabled
+
+    @property
+    def repository_url(self) -> str:
+        """
+        Retrieves the remote url of the current branch in the cloned folder.
+        :return: Such url.
+        :rtype: str
+        """
+        return GitRepo.from_folder(self.repository_folder).remote_url
+
+    def refers_to_my_decision_space(self, url: str) -> str:
+        """
+        Checks whether given url matches the decision space of this artifact.
+        :param url: The repository url.
+        :type url: str
+        :return: True if it refers to the decision space.
+        :rtype: bool
+        """
+        return self.repository_url == f"{url}-artifact"
 
     def own_flake(self, folder: str) -> bool:
         """
@@ -61,6 +101,49 @@ class ArtifactEventListener(BaseObject):
         :rtype: bool
         """
         return os.path.exists(os.path.join(folder, "flake.nix"))
+
+    def flake_path(self, url: str) -> str:
+        """
+        Retrieves the path of the flake associated to given decision-space repository url.
+        :param url: The repository url.
+        :type url: str
+        :return: The path of the flake, or None if the flake does not exist.
+        :rtype: str
+        """
+        (owner, repo_name) = GitRepo.extract_repo_owner_and_repo_name(url)
+        result = os.path.join(self.repository_folder, repo_name, "flake.nix")
+        if not os.path.exists(result):
+            result = None
+
+        return result
+
+    def retrieve_version_in_flake(self, flake: str) -> str:
+        """
+        Retrieves the version in given flake.
+        :param flake: The flake.
+        :type flake: str
+        :return: The version of the package.
+        :rtype: str
+        """
+        result = None
+        home_path = os.environ.get("HOME")
+        completed_process = subprocess.run(
+            [f"{home_path}/bin/extract-nix-flake-version.sh", "-f", flake],
+            check=False,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            cwd=os.path.dirname(flake),
+        )
+        if completed_process.returncode == 0:
+            result = completed_process.stdout
+        else:
+            if completed_process.stdout != "":
+                ArtifactEventListener.logger().error(completed_process.stdout)
+            if completed_process.stderr != "":
+                ArtifactEventListener.logger().error(completed_process.stderr)
+
+        return result
 
     async def update_version_in_flake(self, version: str, flake: str) -> bool:
         """
@@ -74,9 +157,6 @@ class ArtifactEventListener(BaseObject):
         """
         result = True
         home_path = os.environ.get("HOME")
-        print(
-            f"***** running {home_path}/bin/update-sha256-nix-flake.sh -f {flake} -V {version} in {os.path.dirname(flake)}"
-        )
         try:
             subprocess.run(
                 [
@@ -93,11 +173,11 @@ class ArtifactEventListener(BaseObject):
                 cwd=os.path.dirname(flake),
             )
         except subprocess.CalledProcessError as err:
-            Artifact.logger().error(err.stdout)
-            Artifact.logger().error(err.stderr)
+            ArtifactEventListener.logger().error(err.stdout)
+            ArtifactEventListener.logger().error(err.stderr)
             result = False
 
-        return True
+        return result
 
     async def tag(self, folder: str) -> Version:
         """
@@ -120,21 +200,29 @@ class ArtifactEventListener(BaseObject):
                     GitCommit(folder).commit(f"Updated version to {result.value}")
                     GitTag(folder).tag(result)
                 except GitAddFailed as err:
-                    CommittedChangesPushedListener.logger().error(
-                        "Could not stage changes"
-                    )
-                    CommittedChangesPushedListener.logger().error(err)
+                    ArtifactEventListener.logger().error("Could not stage changes")
+                    ArtifactEventListener.logger().error(err)
                     result = None
                 except GitCommitFailed as err:
-                    CommittedChangesPushedListener.logger().error(
+                    ArtifactEventListener.logger().error(
                         "Could not commit staged changes"
                     )
-                    CommittedChangesPushedListener.logger().error(err)
+                    ArtifactEventListener.logger().error(err)
                     result = None
                 except GitTagFailed as err:
-                    CommittedChangesPushedListener.logger().error(
-                        "Could not create tag"
-                    )
-                    CommittedChangesPushedListener.logger().error(err)
+                    ArtifactEventListener.logger().error("Could not create tag")
+                    ArtifactEventListener.logger().error(err)
                     result = None
         return result
+
+    @classmethod
+    def build_input_name(cls, url: str) -> str:
+        """
+        Builds the name of the flake input for given url, based on a convention.
+        :param url: The repository url.
+        :type url: str
+        :return: The input name.
+        :rtype: str
+        """
+        org, repo = GitRepo.extract_repo_owner_and_repo_name(url)
+        return f"{org}-{repo}"

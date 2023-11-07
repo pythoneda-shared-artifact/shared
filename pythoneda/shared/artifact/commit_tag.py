@@ -1,7 +1,7 @@
 """
-pythoneda/shared/artifact/committed_changes_pushed_listener.py
+pythoneda/shared/artifact/commit_tag.py
 
-This file declares the CommittedChangesPushedListener class.
+This file declares the CommitTag class.
 
 Copyright (C) 2023-today rydnr's pythoneda-shared-pythoneda/domain-artifact
 
@@ -25,11 +25,11 @@ from pythoneda.shared.artifact_changes.events import (
 )
 
 
-class CommittedChangesPushedListener(ArtifactEventListener):
+class CommitTag(ArtifactEventListener):
     """
     Reacts to CommittedChangesTagged events.
 
-    Class name: CommittedChangesPushedListener
+    Class name: CommitTag
 
     Responsibilities:
         - React to CommittedChangesPushed events.
@@ -39,11 +39,14 @@ class CommittedChangesPushedListener(ArtifactEventListener):
         - pythoneda.shared.artifact_changes.events.CommittedChangesTagged
     """
 
-    def __init__(self):
+    def __init__(self, folder: str):
         """
-        Creates a new CommittedChangesTaggedListener instance.
+        Creates a new CommitTag instance.
+        :param folder: The artifact's repository folder.
+        :type folder: str
         """
-        super().__init__()
+        super().__init__(folder)
+        self._enabled = True
 
     async def listen(self, event: CommittedChangesPushed) -> CommittedChangesTagged:
         """
@@ -53,8 +56,10 @@ class CommittedChangesPushedListener(ArtifactEventListener):
         :return: An event notifying the changes have been pushed.
         :rtype: pythoneda.shared.artifact_changes.events.CommittedChangesTagged
         """
+        if not self.enabled:
+            return None
         result = None
-        CommittedChangesPushedListener.logger().debug(f"Received {event}")
+        CommitTag.logger().debug(f"Received {event}")
         version = await self.tag(event.change.repository_folder)
         if version is not None:
             result = CommittedChangesTagged(

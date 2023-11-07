@@ -1,7 +1,7 @@
 """
-pythoneda/shared/artifact/artifact.py
+pythoneda/shared/artifact/local_artifact.py
 
-This file declares the Artifact class.
+This file declares the LocalArtifact class.
 
 Copyright (C) 2023-today rydnr's pythoneda-shared-artifact/shared
 
@@ -18,11 +18,19 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from .artifact_event_listener import ArtifactEventListener
-import abc
-import os
-from pythoneda import EventListener, listen, PrimaryPort
+from .artifact import Artifact
+from .artifact_commit_from_artifact_tag_pushed import (
+    ArtifactCommitFromArtifactTagPushed,
+)
+from .artifact_commit_from_tag_pushed import ArtifactCommitFromTagPushed
+from .artifact_commit_push import ArtifactCommitPush
+from .artifact_commit_tag import ArtifactCommitTag
+from .artifact_tag_push import ArtifactTagPush
+from .commit_push import CommitPush
+from .commit_tag import CommitTag
+from .tag_push import TagPush
 
+import abc
 from pythoneda.shared.artifact_changes.events import (
     ArtifactChangesCommitted,
     ArtifactCommitPushed,
@@ -33,19 +41,18 @@ from pythoneda.shared.artifact_changes.events import (
     StagedChangesCommitted,
     TagPushed,
 )
-from pythoneda.shared.git import GitRepo
-from pythoneda.shared.nix_flake import NixFlake
+from pythoneda.shared.git import GitTag
 from typing import Callable, List
 
 
-class Artifact(NixFlake, EventListener, PrimaryPort, abc.ABC):
+class LocalArtifact(Artifact, abc.ABC):
     """
-    Represents Artifacts.
+    Represents Artifacts whose repository is available locally.
 
-    Class name: Artifact
+    Class name: LocalArtifact
 
     Responsibilities:
-        - Provide a model for Artifacts.
+        - Artifact persisted in a local folder.
 
     Collaborators:
         - None
@@ -64,9 +71,10 @@ class Artifact(NixFlake, EventListener, PrimaryPort, abc.ABC):
         maintainers: List,
         copyrightYear: int,
         copyrightHolder: str,
+        repositoryFolder: str,
     ):
         """
-        Creates a new Artifact instance.
+        Creates a new LocalArtifact instance.
         :param name: The name of the artifact.
         :type name: str
         :param version: The version of the artifact.
@@ -89,6 +97,8 @@ class Artifact(NixFlake, EventListener, PrimaryPort, abc.ABC):
         :type copyrightYear: year
         :param copyrightHolder: The copyright holder.
         :type copyrightHolder: str
+        :param repositoryFolder: The repository folder.
+        :type repositoryFolder: str
         """
         super().__init__(
             name,
@@ -103,57 +113,54 @@ class Artifact(NixFlake, EventListener, PrimaryPort, abc.ABC):
             copyrightYear,
             copyrightHolder,
         )
+        self._repository_folder = repositoryFolder
 
-    @classmethod
     @property
-    def is_one_shot_compatible(cls) -> bool:
+    def repository_folder(self) -> str:
         """
-        Retrieves whether this primary port should be instantiated when
-        "one-shot" behavior is active.
-        It should return False if the port listens to future messages
-        from outside.
-        :return: True in such case.
-        :rtype: bool
-        """
-        return True
-
-    @classmethod
-    @property
-    def org(cls) -> str:
-        """
-        Retrieves the organization.
-        :return: Such information.
+        Retrieves the repository folder.
+        :return: Such location.
         :rtype: str
         """
-        result, _ = GitRepo.extract_repo_owner_and_repo_name(cls.url)
+        return self._repository_folder
+
+    @classmethod
+    def find_out_version(cls, repositoryFolder: str) -> str:
+        """
+        Retrieves the version of the flake under given folder.
+        :param repositoryFolder: The repository folder.
+        :type repositoryFolder: str
+        :return: The version
+        :rtype: str
+        """
+        return GitTag(repositoryFolder).current_tag()
+
+    @classmethod
+    def find_out_repository_folder(cls, url: str) -> str:
+        """
+        Retrieves the non-artifact repository folder based on a convention, assuming
+        given folder holds another PythonEDA project.
+        :param artifactRepositoryFolder: The other repository folder.
+        :type artifactRepositoryFolder: str
+        :return: The repository folder, or None if not found.
+        :rtype: str
+        """
+        result = None
+        parent = os.path.dirname(artifactRepositoryFolder)
+        grand_parent = os.path.dirname(parent)
+        git_repo = GitRepo.from_folder(artifactRepositoryFolder)
+        owner, repo = git_repo.repo_owner_and_repo_name()
+        candidate = os.path.join(grand_parent, owner, repo)
+        if os.path.isdir(os.path.join(candidate, ".git")) and (
+            GitRepo(candidate).url == cls.repo_url
+        ):
+            result = candidate
+        else:
+            Artifact.logger().error(f"Cannot find repository folder")
         return result
 
-    @classmethod
-    @property
-    def repo(cls) -> str:
-        """
-        Retrieves the repo.
-        :return: Such information.
-        :rtype: str
-        """
-        _, result = GitRepo.extract_repo_owner_and_repo_name(cls.url)
-        return result
-
-    @classmethod
-    @property
-    @abc.abstractmethod
-    def url(cls) -> str:
-        """
-        Retrieves the url.
-        :return: Such url.
-        :rtype: str
-        """
-        pass
-
-    @classmethod
-    @abc.abstractmethod
-    async def listen_StagedChangesCommitted(
-        cls, event: StagedChangesCommitted
+    async def commit_push(
+        self, event: StagedChangesCommitted
     ) -> CommittedChangesPushed:
         """
         Gets notified of a StagedChangesCommitted event.
@@ -162,13 +169,9 @@ class Artifact(NixFlake, EventListener, PrimaryPort, abc.ABC):
         :return: An event notifying the commit has been pushed.
         :rtype: pythoneda.shared.artifact_changes.events.CommittedChangesPushed
         """
-        pass
+        return await CommitPush(self.repository_folder).listen(event)
 
-    @classmethod
-    @abc.abstractmethod
-    async def listen_CommittedChangesPushed(
-        cls, event: CommittedChangesPushed
-    ) -> CommittedChangesTagged:
+    async def commit_tag(self, event: CommittedChangesPushed) -> CommittedChangesTagged:
         """
         Gets notified of a CommittedChangesPushed event.
         :param event: The event.
@@ -176,13 +179,10 @@ class Artifact(NixFlake, EventListener, PrimaryPort, abc.ABC):
         :return: An event notifying the changes have been pushed.
         :rtype: pythoneda.shared.artifact_changes.events.CommittedChangesTagged
         """
-        pass
+        result = await CommitTag(self.repository_folder).listen(event)
+        return result
 
-    @classmethod
-    @abc.abstractmethod
-    async def listen_CommittedChangesTagged(
-        cls, event: CommittedChangesTagged
-    ) -> TagPushed:
+    async def tag_push(self, event: CommittedChangesTagged) -> TagPushed:
         """
         Gets notified of a CommittedChangesTagged event.
         Pushes the changes and emits a TagPushed event.
@@ -191,11 +191,11 @@ class Artifact(NixFlake, EventListener, PrimaryPort, abc.ABC):
         :return: An event notifying the changes have been pushed.
         :rtype: pythoneda.shared.artifact_changes.events.TagPushed
         """
-        pass
+        return await TagPush(self.repository_folder).listen(event)
 
-    @classmethod
-    @abc.abstractmethod
-    async def listen_TagPushed(cls, event: TagPushed) -> ArtifactChangesCommitted:
+    async def artifact_commit_from_TagPushed(
+        self, event: TagPushed
+    ) -> ArtifactChangesCommitted:
         """
         Gets notified of a TagPushed event.
         Pushes the changes and emits a TagPushed event.
@@ -204,12 +204,10 @@ class Artifact(NixFlake, EventListener, PrimaryPort, abc.ABC):
         :return: An event notifying the changes in the artifact have been committed.
         :rtype: pythoneda.shared.artifact_changes.events.ArtifactChangesCommitted
         """
-        pass
+        return await ArtifactCommitFromTagPushed(self.repository_folder).listen(event)
 
-    @classmethod
-    @abc.abstractmethod
-    async def listen_ArtifactChangesCommitted(
-        cls, event: ArtifactChangesCommitted
+    async def artifact_commit_push(
+        self, event: ArtifactChangesCommitted
     ) -> ArtifactCommitPushed:
         """
         Gets notified of an ArtifactChangesCommitted event.
@@ -218,12 +216,10 @@ class Artifact(NixFlake, EventListener, PrimaryPort, abc.ABC):
         :return: An event notifying the commit in the artifact repository has been pushed.
         :rtype: pythoneda.shared.artifact_changes.events.ArtifactCommitPushed
         """
-        pass
+        return await ArtifactCommitPush(self.repository_folder).listen(event)
 
-    @classmethod
-    @abc.abstractmethod
-    async def listen_ArtifactCommitPushed(
-        cls, event: ArtifactCommitPushed
+    async def artifact_commit_tag(
+        self, event: ArtifactCommitPushed
     ) -> ArtifactCommitTagged:
         """
         Gets notified of an ArtifactCommitPushed event.
@@ -232,13 +228,9 @@ class Artifact(NixFlake, EventListener, PrimaryPort, abc.ABC):
         :return: An event notifying the commit in the artifact repository has been tagged.
         :rtype: pythoneda.shared.artifact_changes.events.ArtifactCommitTagged
         """
-        pass
+        return await ArtifactCommitTag(self.repository_folder).listen(event)
 
-    @classmethod
-    @abc.abstractmethod
-    async def listen_ArtifactCommitTagged(
-        cls, event: ArtifactCommitTagged
-    ) -> ArtifactTagPushed:
+    async def artifact_tag_push(self, event: ArtifactCommitTagged) -> ArtifactTagPushed:
         """
         Gets notified of an ArtifactCommitTagged event.
         :param event: The event.
@@ -246,12 +238,10 @@ class Artifact(NixFlake, EventListener, PrimaryPort, abc.ABC):
         :return: An event notifying the tag in the artifact has been pushed.
         :rtype: pythoneda.shared.artifact_commit.events.ArtifactTagPushed
         """
-        pass
+        return await ArtifactTagPush(self.repository_folder).listen(event)
 
-    @classmethod
-    @abc.abstractmethod
-    async def listen_ArtifactTagPushed(
-        cls, event: ArtifactTagPushed
+    async def artifact_commit_from_ArtifactTagPushed(
+        self, event: ArtifactTagPushed
     ) -> ArtifactChangesCommitted:
         """
         Listens to ArtifactTagPushed event to check if affects any of its dependencies.
@@ -261,4 +251,6 @@ class Artifact(NixFlake, EventListener, PrimaryPort, abc.ABC):
         :return: An event representing the commit.
         :rtype: pythoneda.shared.artifact_changes.events.ArtifactChangesCommitted
         """
-        pass
+        return await ArtifactCommitFromArtifactTagPushed(self.repository_folder).listen(
+            event, self
+        )

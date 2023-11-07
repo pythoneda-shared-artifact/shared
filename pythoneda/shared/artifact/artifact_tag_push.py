@@ -1,7 +1,7 @@
 """
-pythoneda/shared/artifact/artifact_commit_tagged_listener.py
+pythoneda/shared/artifact/artifact_tag_push.py
 
-This file declares the ArtifactCommitTaggedListener class.
+This file declares the ArtifactTagPush class.
 
 Copyright (C) 2023-today rydnr's pythoneda-shared-artifact/shared
 
@@ -26,11 +26,11 @@ from pythoneda.shared.artifact_changes.events import (
 from pythoneda.shared.git import GitPush, GitPushFailed
 
 
-class ArtifactCommitTaggedListener(ArtifactEventListener):
+class ArtifactTagPush(ArtifactEventListener):
     """
     Reacts to ArtifactCommitTagged events.
 
-    Class name: ArtifactCommitTaggedListener
+    Class name: ArtifactTagPush
 
     Responsibilities:
         - React to ArtifactCommitTagged events.
@@ -40,11 +40,14 @@ class ArtifactCommitTaggedListener(ArtifactEventListener):
         - pythoneda.shared.artifact_commit.events.ArtifactTagPushed
     """
 
-    def __init__(self):
+    def __init__(self, folder: str):
         """
-        Creates a new ArtifactCommitTaggedListener instance.
+        Creates a new ArtifactTagPush instance.
+        :param folder: The artifact's repository folder.
+        :type folder: str
         """
-        super().__init__()
+        super().__init__(folder)
+        self._enabled = True
 
     async def listen(self, event: ArtifactCommitTagged) -> ArtifactTagPushed:
         """
@@ -55,7 +58,7 @@ class ArtifactCommitTaggedListener(ArtifactEventListener):
         :rtype: pythoneda.shared.artifact_commit.events.ArtifactTagPushed
         """
         result = None
-        ArtifactCommitTaggedListener.logger().debug(f"Received {event}")
+        ArtifactTagPush.logger().debug(f"Received {event}")
         result = await self.push_tag_artifact(event)
         return result
 
@@ -67,6 +70,8 @@ class ArtifactCommitTaggedListener(ArtifactEventListener):
         :return: An event notifying the tag in the artifact has been pushed.
         :rtype: pythoneda.shared.artifact_commit.events.ArtifactTagPushed
         """
+        if not self.enabled:
+            return None
         result = None
         try:
             GitPush(event.repository_folder).push_tags()
@@ -79,6 +84,6 @@ class ArtifactCommitTaggedListener(ArtifactEventListener):
                 event.id,
             )
         except GitPushFailed as err:
-            ArtifactCommitTaggedListener.logger().error(f"Error pushing tags")
-            ArtifactCommitTaggedListener.logger().error(err)
+            ArtifactTagPush.logger().error(f"Error pushing tags")
+            ArtifactTagPush.logger().error(err)
         return result

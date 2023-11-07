@@ -1,7 +1,7 @@
 """
-pythoneda/shared/artifact/artifact_commit_pushed_listener.py
+pythoneda/shared/artifact/artifact_commit_tag.py
 
-This file declares the ArtifactCommitPushedListener class.
+This file declares the ArtifactCommitTag class.
 
 Copyright (C) 2023-today rydnr's pythoneda-shared-artifact/shared
 
@@ -25,11 +25,11 @@ from pythoneda.shared.artifact_changes.events import (
 )
 
 
-class ArtifactCommitPushedListener(ArtifactEventListener):
+class ArtifactCommitTag(ArtifactEventListener):
     """
     Reacts to ArtifactCommitPushed events.
 
-    Class name: ArtifactCommitPushedListener
+    Class name: ArtifactCommitTag
 
     Responsibilities:
         - React to ArtifactCommitPushed events.
@@ -39,11 +39,14 @@ class ArtifactCommitPushedListener(ArtifactEventListener):
         - pythoneda.shared.artifact_changes.events.CommittedChangesPushed
     """
 
-    def __init__(self):
+    def __init__(self, folder: str):
         """
-        Creates a new ArtifactCommitPushedListener instance.
+        Creates a new ArtifactCommitTag instance.
+        :param folder: The artifact's repository folder.
+        :type folder: str
         """
-        super().__init__()
+        super().__init__(folder)
+        self._enabled = True
 
     async def listen(self, event: ArtifactCommitPushed) -> ArtifactCommitTagged:
         """
@@ -54,7 +57,7 @@ class ArtifactCommitPushedListener(ArtifactEventListener):
         :rtype: pythoneda.shared.artifact_changes.events.ArtifactCommitTagged
         """
         result = None
-        ArtifactCommitPushedListener.logger().debug(f"Received {event}")
+        ArtifactCommitTag.logger().debug(f"Received {event}")
         result = await self.tag_artifact(event)
         return result
 
@@ -66,6 +69,8 @@ class ArtifactCommitPushedListener(ArtifactEventListener):
         :return: An event notifying the commit in the artifact repository has been tagged.
         :rtype: pythoneda.shared.artifact_changes.events.ArtifactCommitTagged
         """
+        if not self.enabled:
+            return None
         result = None
         version = await self.tag(event.change.repository_folder)
         if version is not None:

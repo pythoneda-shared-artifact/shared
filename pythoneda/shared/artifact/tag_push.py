@@ -1,7 +1,7 @@
 """
-pythoneda/shared/artifact/committed_changes_tagged_listener.py
+pythoneda/shared/artifact/tag_push.py
 
-This file declares the CommittedChangesTaggedListener class.
+This file declares the TagPush class.
 
 Copyright (C) 2023-today rydnr's pythoneda-shared-artifact/shared
 
@@ -23,11 +23,11 @@ from pythoneda.shared.artifact_changes.events import CommittedChangesTagged, Tag
 from pythoneda.shared.git import GitPush, GitPushFailed
 
 
-class CommittedChangesTaggedListener(ArtifactEventListener):
+class TagPush(ArtifactEventListener):
     """
     Reacts to CommittedChangesTagged events.
 
-    Class name: CommittedChangesTaggedListener
+    Class name: TagPush
 
     Responsibilities:
         - React to CommittedChangesTagged events.
@@ -37,11 +37,14 @@ class CommittedChangesTaggedListener(ArtifactEventListener):
         - pythoneda.shared.artifact_changes.events.TagPushed
     """
 
-    def __init__(self):
+    def __init__(self, folder: str):
         """
-        Creates a new CommittedChangesTaggedListener instance.
+        Creates a new TagPush instance.
+        :param folder: The artifact's repository folder.
+        :type folder: str
         """
-        super().__init__()
+        super().__init__(folder)
+        self._enabled = True
 
     async def listen(self, event: CommittedChangesTagged) -> TagPushed:
         """
@@ -52,8 +55,10 @@ class CommittedChangesTaggedListener(ArtifactEventListener):
         :return: An event notifying the changes have been pushed.
         :rtype: pythoneda.shared.artifact_changes.events.TagPushed
         """
+        if not self.enabled:
+            return None
         result = None
-        CommittedChangesTaggedListener.logger().debug(f"Received {event}")
+        TagPush.logger().debug(f"Received {event}")
         pushed = await self.push_tags(event.repository_folder)
         if pushed:
             result = TagPushed(
@@ -64,7 +69,10 @@ class CommittedChangesTaggedListener(ArtifactEventListener):
                 event.repository_folder,
                 event.id,
             )
-            CommittedChangesTaggedListener.logger().debug(f"Emitting {result}")
+            print(result)
+            import sys
+
+            sys.exit(1)
         return result
 
     async def push_tags(self, folder: str) -> bool:
@@ -80,6 +88,6 @@ class CommittedChangesTaggedListener(ArtifactEventListener):
             GitPush(folder).push_tags()
             result = True
         except GitPushFailed as err:
-            CommittedChangesTaggedListener.logger().error(err)
+            TagPush.logger().error(err)
             result = False
         return result

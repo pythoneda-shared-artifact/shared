@@ -1,7 +1,7 @@
 """
-pythoneda/shared/artifact/tag_pushed_listener.py
+pythoneda/shared/artifact/artifact_commit_from_tag_pushed.py
 
-This file declares the TagPushedListener class.
+This file declares the ArtifactCommitFromTagPushed class.
 
 Copyright (C) 2023-today rydnr's pythoneda-shared-artifact/shared
 
@@ -32,11 +32,11 @@ from pythoneda.shared.git import (
 import requests
 
 
-class TagPushedListener(ArtifactEventListener):
+class ArtifactCommitFromTagPushed(ArtifactEventListener):
     """
     Reacts to TagPushed events.
 
-    Class name: TagPushedListener
+    Class name: ArtifactCommitFromTagPushed
 
     Responsibilities:
         - React to TagPushed events.
@@ -46,11 +46,14 @@ class TagPushedListener(ArtifactEventListener):
         - pythoneda.shared.artifact_changes.events.ArtifactChangesCommitted
     """
 
-    def __init__(self):
+    def __init__(self, folder: str):
         """
-        Creates a new TagPushedListener instance.
+        Creates a new ArtifactCommitFromTagPushed instance.
+        :param folder: The artifact's repository folder.
+        :type folder: str
         """
-        super().__init__()
+        super().__init__(folder)
+        self._enabled = True
 
     async def listen(self, event: TagPushed) -> ArtifactChangesCommitted:
         """
@@ -61,8 +64,10 @@ class TagPushedListener(ArtifactEventListener):
         :return: An event notifying the changes in the artifact have been committed.
         :rtype: pythoneda.shared.artifact_changes.events.ArtifactChangesCommitted
         """
+        if not self.enabled:
+            return None
         result = None
-        TagPushedListener.logger().debug(f"Received {event}")
+        ArtifactCommitFromTagPushed.logger().debug(f"Received {event}")
         result = await self.update_artifact_version(event)
         return result
 
@@ -78,50 +83,21 @@ class TagPushedListener(ArtifactEventListener):
         """
         result = None
         artifact_repo = None
-        # check if there's a flake in the root folder.
-        if not self.own_flake(event.repository_folder):
-            # retrieve the artifact repository, if any.
-            artifact_repo_url = self.artifact_repository_url_for(event.repository_url)
-
-        artifact_repo_folder = None
-        if artifact_repo_url is not None:
-            # find out the local folder for the artifact repository
-            artifact_repo_folder = self.artifact_repository_folder_of(
-                artifact_repo_url, event.repository_folder
-            )
-
-        flake = None
-        if artifact_repo_folder is not None:
+        # First, check if the event refers to the domain space of this artifact.
+        if self.refers_to_my_decision_space(event.repository_url):
+            flake = None
             # retrieve subfolder for the flake
-            flake = self.flake_path_in_artifact_repository(
-                artifact_repo_folder, event.repository_url
-            )
+            flake = self.flake_path(event.repository_url)
 
-        if flake is not None:
-            # update the version and hash in the flake of the artifact repository
-            print(f"**** flake -> {flake}")
-            version_updated = await self.update_version_in_flake(event.tag, flake)
-            if version_updated:
-                hash, change = await self.commit_artifact_changes(
-                    artifact_repo_folder, flake, event.repository_url, event.tag
-                )
-                if hash:
-                    result = ArtifactChangesCommitted(change, hash, event.id)
-
-        return result
-
-    def artifact_repository_url_for(self, url: str) -> str:
-        """
-        Retrieves the url of the artifact repository for given url.
-        :param url: The repository url.
-        :type url: str
-        :return: The url of the artfifact repository, or None if not found.
-        :rtype: str
-        """
-        result = None
-        artifact_url = f"{url}-artifact"
-        if self.url_exists(artifact_url):
-            result = artifact_url
+            if flake is not None and self.retrieve_version_in_flake(flake) != event.tag:
+                # update the version and hash in the flake of the artifact repository
+                version_updated = await self.update_version_in_flake(event.tag, flake)
+                if version_updated:
+                    hash, change = await self.commit_artifact_changes(
+                        flake, event.repository_url, event.tag
+                    )
+                    if hash:
+                        result = ArtifactChangesCommitted(change, hash, event.id)
 
         return result
 
@@ -139,8 +115,10 @@ class TagPushedListener(ArtifactEventListener):
             if response.status_code == 200:
                 result = True
         except requests.RequestException as err:
-            TagPushedListener.logger().error(f"Could not check if {url} exists")
-            TagPushedListener.logger().error(err)
+            ArtifactCommitFromTagPushed.logger().error(
+                f"Could not check if {url} exists"
+            )
+            ArtifactCommitFromTagPushed.logger().error(err)
 
         return result
 
@@ -189,7 +167,7 @@ class TagPushedListener(ArtifactEventListener):
         return result
 
     async def commit_artifact_changes(
-        self, artifactRepoFolder: str, flake: str, domainRepoUrl: str, domainTag: str
+        self, flake: str, domainRepoUrl: str, domainTag: str
     ):
         """
         Commits the changes in the artifact repository.
@@ -206,17 +184,19 @@ class TagPushedListener(ArtifactEventListener):
         """
         result = (None, None)
         try:
-            GitAdd(artifactRepoFolder).add(flake)
-            hash, diff = GitCommit(artifactRepoFolder).commit(
+            GitAdd(self.repository_folder).add(flake)
+            hash, diff = GitCommit(self.repository_folder).commit(
                 f"New tag {domainTag} in {domainRepoUrl}"
             )
-            repo = GitRepo.from_folder(artifactRepoFolder)
+            repo = GitRepo.from_folder(self.repository_folder)
             result = (
                 hash,
-                Change.from_unidiff_text(diff, repo.url, repo.rev, artifactRepoFolder),
+                Change.from_unidiff_text(
+                    diff, repo.url, repo.rev, self.repository_folder
+                ),
             )
         except GitAddFailed as err:
-            TagPushedListener.logger().error(err)
+            ArtifactCommitFromTagPushed.logger().error(err)
         except GitCommitFailed as err:
-            TagPushedListener.logger().error(err)
+            ArtifactCommitFromTagPushed.logger().error(err)
         return result

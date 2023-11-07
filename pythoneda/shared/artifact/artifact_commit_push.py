@@ -1,7 +1,7 @@
 """
-pythoneda/shared/artifact/artifact_changes_committed_listener.py
+pythoneda/shared/artifact/artifact_commit_push.py
 
-This file declares the ArtifactChangesCommittedListener class.
+This file declares the ArtifactCommitPush class.
 
 Copyright (C) 2023-today rydnr's pythoneda-shared-artifact/shared
 
@@ -26,11 +26,11 @@ from pythoneda.shared.artifact_changes.events import (
 from pythoneda.shared.git import GitPush, GitPushFailed
 
 
-class ArtifactChangesCommittedListener(ArtifactEventListener):
+class ArtifactCommitPush(ArtifactEventListener):
     """
     Reacts to ArtifactChangesCommitted events.
 
-    Class name: ArtifactChangesCommittedListener
+    Class name: ArtifactCommitPush
 
     Responsibilities:
         - React to ArtifactChangesCommitted events.
@@ -40,11 +40,14 @@ class ArtifactChangesCommittedListener(ArtifactEventListener):
         - pythoneda.shared.artifact_changes.events.CommittedChangesPushed
     """
 
-    def __init__(self):
+    def __init__(self, folder: str):
         """
-        Creates a new ArtifactChangesCommittedListener instance.
+        Creates a new ArtifactCommitPush instance.
+        :param folder: The artifact's repository folder.
+        :type folder: str
         """
-        super().__init__()
+        super().__init__(folder)
+        self._enabled = True
 
     async def listen(self, event: ArtifactChangesCommitted) -> ArtifactCommitPushed:
         """
@@ -54,8 +57,9 @@ class ArtifactChangesCommittedListener(ArtifactEventListener):
         :return: An event notifying the commit in the artifact repository has been pushed.
         :rtype: pythoneda.shared.artifact_changes.events.ArtifactCommitPushed
         """
-        result = None
-        ArtifactChangesCommittedListener.logger().debug(f"Received {event}")
+        if not self.enabled:
+            return None
+        ArtifactCommitPush.logger().debug(f"Received {event}")
         result = await self.push_artifact_commit(event)
         return result
 
@@ -71,10 +75,10 @@ class ArtifactChangesCommittedListener(ArtifactEventListener):
         """
         result = None
         try:
-            GitPush(event.change.repository_folder).push_all()
+            GitPush(event.change.repository_folder).push()
             result = ArtifactCommitPushed(event.change, event.commit, event.id)
         except GitPushFailed as err:
-            ArtifactChangesCommittedListener.logger().error(err)
+            ArtifactCommitPush.logger().error(err)
             result = None
 
         return result

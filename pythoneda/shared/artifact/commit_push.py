@@ -26,11 +26,11 @@ from pythoneda.shared.artifact_changes.events import (
 from pythoneda.shared.git import GitPush, GitPushFailed
 
 
-class StagedChangesCommittedListener(ArtifactEventListener):
+class CommitPush(ArtifactEventListener):
     """
     Reacts to StagedChangesCommitted events.
 
-    Class name: StagedChangesCommittedListener
+    Class name: CommitPush
 
     Responsibilities:
         - React to StagedChangesCommitted events.
@@ -40,11 +40,14 @@ class StagedChangesCommittedListener(ArtifactEventListener):
         - pythoneda.shared.artifact_changes.events.CommittedChangesPushed
     """
 
-    def __init__(self):
+    def __init__(self, folder: str):
         """
-        Creates a new StagedChangesCommittedListener instance.
+        Creates a new CommitPush instance.
+        :param folder: The artifact's repository folder.
+        :type folder: str
         """
-        super().__init__()
+        super().__init__(folder)
+        self._enabled = True
 
     async def listen(self, event: StagedChangesCommitted) -> CommittedChangesPushed:
         """
@@ -54,8 +57,10 @@ class StagedChangesCommittedListener(ArtifactEventListener):
         :return: An event notifying the commit has been pushed.
         :rtype: pythoneda.shared.artifact_changes.events.CommittedChangesPushed
         """
+        if not self.enabled:
+            return None
         result = None
-        StagedChangesCommittedListener.logger().debug(f"Received {event}")
+        CommitPush.logger().debug(f"Received {event}")
         pushed = await self.push(event.change.repository_folder)
         if pushed:
             result = CommittedChangesPushed(event.change, event.commit, event.id)
@@ -71,10 +76,10 @@ class StagedChangesCommittedListener(ArtifactEventListener):
         """
         result = False
         try:
-            GitPush(folder).push_all()
+            GitPush(folder).push()
             result = True
         except GitPushFailed as err:
-            StagedChangesCommittedListener.logger().error("Could not push commits")
-            StagedChangesCommittedListener.logger().error(err)
+            CommitPush.logger().error("Could not push commits")
+            CommitPush.logger().error(err)
             result = False
         return result
