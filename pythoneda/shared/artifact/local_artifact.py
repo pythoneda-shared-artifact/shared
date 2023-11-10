@@ -19,13 +19,6 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from .artifact import Artifact
-from .artifact_commit_from_artifact_tag_pushed import (
-    ArtifactCommitFromArtifactTagPushed,
-)
-from .artifact_commit_from_tag_pushed import ArtifactCommitFromTagPushed
-from .artifact_commit_push import ArtifactCommitPush
-from .artifact_commit_tag import ArtifactCommitTag
-from .artifact_tag_push import ArtifactTagPush
 from .commit_push import CommitPush
 from .commit_tag import CommitTag
 from .tag_push import TagPush
@@ -36,12 +29,6 @@ from pythoneda.shared.artifact.events import (
     CommittedChangesTagged,
     StagedChangesCommitted,
     TagPushed,
-)
-from pythoneda.shared.artifact.events.artifact import (
-    ArtifactChangesCommitted,
-    ArtifactCommitPushed,
-    ArtifactCommitTagged,
-    ArtifactTagPushed,
 )
 from pythoneda.shared.git import GitTag
 from typing import Callable, List
@@ -135,31 +122,25 @@ class LocalArtifact(Artifact, abc.ABC):
         :return: The version
         :rtype: str
         """
-        return GitTag(repositoryFolder).current_tag()
+        return RepositoryFolderHelper.find_out_version(repositoryFolder)
 
     @classmethod
-    def find_out_repository_folder(cls, url: str) -> str:
+    def find_out_repository_folder(
+        cls, referenceRepositoryFolder: str, url: str
+    ) -> str:
         """
         Retrieves the non-artifact repository folder based on a convention, assuming
         given folder holds another PythonEDA project.
-        :param artifactRepositoryFolder: The other repository folder.
-        :type artifactRepositoryFolder: str
+        :param referenceRepositoryFolder: The other repository folder.
+        :type referenceRepositoryFolder: str
+        :param url: The url of the repository we want to know where it's cloned.
+        :type url: str
         :return: The repository folder, or None if not found.
         :rtype: str
         """
-        result = None
-        parent = os.path.dirname(artifactRepositoryFolder)
-        grand_parent = os.path.dirname(parent)
-        git_repo = GitRepo.from_folder(artifactRepositoryFolder)
-        owner, repo = git_repo.repo_owner_and_repo_name()
-        candidate = os.path.join(grand_parent, owner, repo)
-        if os.path.isdir(os.path.join(candidate, ".git")) and (
-            GitRepo(candidate).url == cls.repo_url
-        ):
-            result = candidate
-        else:
-            Artifact.logger().error(f"Cannot find repository folder")
-        return result
+        return RepositoryFolderHelper.find_out_repository_folder(
+            referenceRepositoryFolder, url
+        )
 
     async def commit_push(
         self, event: StagedChangesCommitted
@@ -194,65 +175,3 @@ class LocalArtifact(Artifact, abc.ABC):
         :rtype: pythoneda.shared.artifact.events.TagPushed
         """
         return await TagPush(self.repository_folder).listen(event)
-
-    async def artifact_commit_from_TagPushed(
-        self, event: TagPushed
-    ) -> ArtifactChangesCommitted:
-        """
-        Gets notified of a TagPushed event.
-        Pushes the changes and emits a TagPushed event.
-        :param event: The event.
-        :type event: pythoneda.shared.artifact.events.TagPushed
-        :return: An event notifying the changes in the artifact have been committed.
-        :rtype: pythoneda.shared.artifact.events.ArtifactChangesCommitted
-        """
-        return await ArtifactCommitFromTagPushed(self.repository_folder).listen(event)
-
-    async def artifact_commit_push(
-        self, event: ArtifactChangesCommitted
-    ) -> ArtifactCommitPushed:
-        """
-        Gets notified of an ArtifactChangesCommitted event.
-        :param event: The event.
-        :type event: pythoneda.shared.artifact.events.artifact.ArtifactChangesCommitted
-        :return: An event notifying the commit in the artifact repository has been pushed.
-        :rtype: pythoneda.shared.artifact.events.artifact.ArtifactCommitPushed
-        """
-        return await ArtifactCommitPush(self.repository_folder).listen(event)
-
-    async def artifact_commit_tag(
-        self, event: ArtifactCommitPushed
-    ) -> ArtifactCommitTagged:
-        """
-        Gets notified of an ArtifactCommitPushed event.
-        :param event: The event.
-        :type event: pythoneda.shared.artifact.events.artifact.ArtifactCommitPushed
-        :return: An event notifying the commit in the artifact repository has been tagged.
-        :rtype: pythoneda.shared.artifact.events.artifact.ArtifactCommitTagged
-        """
-        return await ArtifactCommitTag(self.repository_folder).listen(event)
-
-    async def artifact_tag_push(self, event: ArtifactCommitTagged) -> ArtifactTagPushed:
-        """
-        Gets notified of an ArtifactCommitTagged event.
-        :param event: The event.
-        :type event: pythoneda.shared.artifact_commit.events.ArtifactCommitTagged
-        :return: An event notifying the tag in the artifact has been pushed.
-        :rtype: pythoneda.shared.artifact_commit.events.ArtifactTagPushed
-        """
-        return await ArtifactTagPush(self.repository_folder).listen(event)
-
-    async def artifact_commit_from_ArtifactTagPushed(
-        self, event: ArtifactTagPushed
-    ) -> ArtifactChangesCommitted:
-        """
-        Listens to ArtifactTagPushed event to check if affects any of its dependencies.
-        In such case, it creates a commit with the dependency change.
-        :param event: The event.
-        :type event: pythoneda.shared.artifact.events.artifact.ArtifactTagPushed
-        :return: An event representing the commit.
-        :rtype: pythoneda.shared.artifact.events.artifact.ArtifactChangesCommitted
-        """
-        return await ArtifactCommitFromArtifactTagPushed(self.repository_folder).listen(
-            event, self
-        )

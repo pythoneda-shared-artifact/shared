@@ -18,12 +18,13 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from .abstract_artifact import AbstractArtifact
 from .artifact_event_listener import ArtifactEventListener
 import abc
 import os
 from pythoneda import EventListener, listen, PrimaryPort
 
-from pythoneda.shared.artifact_changes.events import (
+from pythoneda.shared.artifact.events import (
     ArtifactChangesCommitted,
     ArtifactCommitPushed,
     ArtifactCommitTagged,
@@ -38,7 +39,7 @@ from pythoneda.shared.nix_flake import NixFlake
 from typing import Callable, List
 
 
-class Artifact(NixFlake, EventListener, PrimaryPort, abc.ABC):
+class Artifact(AbstractArtifact, abc.ABC):
     """
     Represents Artifacts.
 
@@ -103,52 +104,6 @@ class Artifact(NixFlake, EventListener, PrimaryPort, abc.ABC):
             copyrightYear,
             copyrightHolder,
         )
-
-    @classmethod
-    @property
-    def is_one_shot_compatible(cls) -> bool:
-        """
-        Retrieves whether this primary port should be instantiated when
-        "one-shot" behavior is active.
-        It should return False if the port listens to future messages
-        from outside.
-        :return: True in such case.
-        :rtype: bool
-        """
-        return True
-
-    @classmethod
-    @property
-    def org(cls) -> str:
-        """
-        Retrieves the organization.
-        :return: Such information.
-        :rtype: str
-        """
-        result, _ = GitRepo.extract_repo_owner_and_repo_name(cls.url)
-        return result
-
-    @classmethod
-    @property
-    def repo(cls) -> str:
-        """
-        Retrieves the repo.
-        :return: Such information.
-        :rtype: str
-        """
-        _, result = GitRepo.extract_repo_owner_and_repo_name(cls.url)
-        return result
-
-    @classmethod
-    @property
-    @abc.abstractmethod
-    def url(cls) -> str:
-        """
-        Retrieves the url.
-        :return: Such url.
-        :rtype: str
-        """
-        pass
 
     @classmethod
     @abc.abstractmethod
