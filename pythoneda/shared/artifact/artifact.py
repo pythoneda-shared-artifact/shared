@@ -25,10 +25,6 @@ import os
 from pythoneda import EventListener, listen, PrimaryPort
 
 from pythoneda.shared.artifact.events import (
-    ArtifactChangesCommitted,
-    ArtifactCommitPushed,
-    ArtifactCommitTagged,
-    ArtifactTagPushed,
     CommittedChangesPushed,
     CommittedChangesTagged,
     StagedChangesCommitted,
@@ -145,75 +141,5 @@ class Artifact(AbstractArtifact, abc.ABC):
         :type event: pythoneda.shared.artifact_changes.events.CommittedChangesTagged
         :return: An event notifying the changes have been pushed.
         :rtype: pythoneda.shared.artifact_changes.events.TagPushed
-        """
-        pass
-
-    @classmethod
-    @abc.abstractmethod
-    async def listen_TagPushed(cls, event: TagPushed) -> ArtifactChangesCommitted:
-        """
-        Gets notified of a TagPushed event.
-        Pushes the changes and emits a TagPushed event.
-        :param event: The event.
-        :type event: pythoneda.shared.artifact_changes.events.TagPushed
-        :return: An event notifying the changes in the artifact have been committed.
-        :rtype: pythoneda.shared.artifact_changes.events.ArtifactChangesCommitted
-        """
-        pass
-
-    @classmethod
-    @abc.abstractmethod
-    async def listen_ArtifactChangesCommitted(
-        cls, event: ArtifactChangesCommitted
-    ) -> ArtifactCommitPushed:
-        """
-        Gets notified of an ArtifactChangesCommitted event.
-        :param event: The event.
-        :type event: pythoneda.shared.artifact_changes.events.ArtifactChangesCommitted
-        :return: An event notifying the commit in the artifact repository has been pushed.
-        :rtype: pythoneda.shared.artifact_changes.events.ArtifactCommitPushed
-        """
-        pass
-
-    @classmethod
-    @abc.abstractmethod
-    async def listen_ArtifactCommitPushed(
-        cls, event: ArtifactCommitPushed
-    ) -> ArtifactCommitTagged:
-        """
-        Gets notified of an ArtifactCommitPushed event.
-        :param event: The event.
-        :type event: pythoneda.shared.artifact_changes.events.ArtifactCommitPushed
-        :return: An event notifying the commit in the artifact repository has been tagged.
-        :rtype: pythoneda.shared.artifact_changes.events.ArtifactCommitTagged
-        """
-        pass
-
-    @classmethod
-    @abc.abstractmethod
-    async def listen_ArtifactCommitTagged(
-        cls, event: ArtifactCommitTagged
-    ) -> ArtifactTagPushed:
-        """
-        Gets notified of an ArtifactCommitTagged event.
-        :param event: The event.
-        :type event: pythoneda.shared.artifact_commit.events.ArtifactCommitTagged
-        :return: An event notifying the tag in the artifact has been pushed.
-        :rtype: pythoneda.shared.artifact_commit.events.ArtifactTagPushed
-        """
-        pass
-
-    @classmethod
-    @abc.abstractmethod
-    async def listen_ArtifactTagPushed(
-        cls, event: ArtifactTagPushed
-    ) -> ArtifactChangesCommitted:
-        """
-        Listens to ArtifactTagPushed event to check if affects any of its dependencies.
-        In such case, it creates a commit with the dependency change.
-        :param event: The event.
-        :type event: pythoneda.shared.artifact_changes.events.ArtifactTagPushed
-        :return: An event representing the commit.
-        :rtype: pythoneda.shared.artifact_changes.events.ArtifactChangesCommitted
         """
         pass
