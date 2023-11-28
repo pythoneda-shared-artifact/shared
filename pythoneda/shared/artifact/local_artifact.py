@@ -18,7 +18,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from .artifact import Artifact
+from .abstract_artifact import AbstractArtifact
 from .commit_push import CommitPush
 from .commit_tag import CommitTag
 from .tag_push import TagPush
@@ -34,7 +34,7 @@ from pythoneda.shared.git import GitTag
 from typing import Callable, List
 
 
-class LocalArtifact(Artifact, abc.ABC):
+class LocalArtifact(AbstractArtifact, abc.ABC):
     """
     Represents Artifacts whose repository is available locally.
 

@@ -22,7 +22,12 @@ from .artifact_event_listener import ArtifactEventListener
 import abc
 import os
 from pythoneda import EventListener, listen, PrimaryPort
-
+from pythoneda.shared.artifact.events import (
+    CommittedChangesPushed,
+    CommittedChangesTagged,
+    StagedChangesCommitted,
+    TagPushed,
+)
 from pythoneda.shared.git import GitRepo
 from pythoneda.shared.nix_flake import NixFlake
 from typing import Callable, List
@@ -137,5 +142,48 @@ class AbstractArtifact(NixFlake, EventListener, PrimaryPort, abc.ABC):
         Retrieves the url.
         :return: Such url.
         :rtype: str
+        """
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    async def listen_StagedChangesCommitted(
+        cls, event: StagedChangesCommitted
+    ) -> CommittedChangesPushed:
+        """
+        Gets notified of a StagedChangesCommitted event.
+        :param event: The event.
+        :type event: pythoneda.shared.artifact_changes.events.StagedChangesCommitted
+        :return: An event notifying the commit has been pushed.
+        :rtype: pythoneda.shared.artifact_changes.events.CommittedChangesPushed
+        """
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    async def listen_CommittedChangesPushed(
+        cls, event: CommittedChangesPushed
+    ) -> CommittedChangesTagged:
+        """
+        Gets notified of a CommittedChangesPushed event.
+        :param event: The event.
+        :type event: pythoneda.shared.artifact_changes.events.CommitedChangesPushed
+        :return: An event notifying the changes have been pushed.
+        :rtype: pythoneda.shared.artifact_changes.events.CommittedChangesTagged
+        """
+        pass
+
+    @classmethod
+    @abc.abstractmethod
+    async def listen_CommittedChangesTagged(
+        cls, event: CommittedChangesTagged
+    ) -> TagPushed:
+        """
+        Gets notified of a CommittedChangesTagged event.
+        Pushes the changes and emits a TagPushed event.
+        :param event: The event.
+        :type event: pythoneda.shared.artifact_changes.events.CommittedChangesTagged
+        :return: An event notifying the changes have been pushed.
+        :rtype: pythoneda.shared.artifact_changes.events.TagPushed
         """
         pass

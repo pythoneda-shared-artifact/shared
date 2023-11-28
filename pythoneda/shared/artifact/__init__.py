@@ -22,7 +22,7 @@ __path__ = __import__("pkgutil").extend_path(__path__, __name__)
 
 from .abstract_artifact import AbstractArtifact
 from .architectural_role import ArchitecturalRole
-from .artifact import Artifact
+from .artifact_event_listener import ArtifactEventListener
 from .commit_push import CommitPush
 from .commit_tag import CommitTag
 from .hexagonal_layer import HexagonalLayer
@@ -37,8 +37,3 @@ from .tag_push import TagPush
 # 1. CommitPush
 # 2. CommitTag
 # 3. TagPush
-# 4. ArtifactCommitFromTagPushed
-# 5. ArtifactCommitPush
-# 6. ArtifactCommitTag
-# 7. ArtifactTagPush
-# 8. ArtifactCommitFromArtifactTagPushed

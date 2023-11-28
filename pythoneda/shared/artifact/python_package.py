@@ -18,14 +18,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from .abstract_artifact import AbstractArtifact
 from .architectural_role import ArchitecturalRole
-from .artifact import Artifact
 from .hexagonal_layer import HexagonalLayer
 from .pescio_space import PescioSpace
 from typing import List
 
 
-class PythonPackage(Artifact):
+class PythonPackage(AbstractArtifact):
     """
     Represents a Python package.
 
