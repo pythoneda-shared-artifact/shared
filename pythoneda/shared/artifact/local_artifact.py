@@ -21,8 +21,8 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 from .abstract_artifact import AbstractArtifact
 from .commit_push import CommitPush
 from .commit_tag import CommitTag
+from .repository_folder_helper import RepositoryFolderHelper
 from .tag_push import TagPush
-
 import abc
 from pythoneda.shared.artifact.events import (
     CommittedChangesPushed,
