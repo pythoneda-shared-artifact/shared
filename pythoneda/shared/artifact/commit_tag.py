@@ -59,7 +59,7 @@ class CommitTag(ArtifactEventListener):
         if not self.enabled:
             return None
         result = None
-        CommitTag.logger().debug(f"Received {event}")
+        CommitTag.logger().debug(f"Received {event.__class__}")
         version = await self.tag(event.change.repository_folder)
         if version is not None:
             result = CommittedChangesTagged(

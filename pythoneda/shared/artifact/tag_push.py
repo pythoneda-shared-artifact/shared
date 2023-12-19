@@ -70,9 +70,6 @@ class TagPush(ArtifactEventListener):
                 event.id,
             )
             print(result)
-            import sys
-
-            sys.exit(1)
         return result
 
     async def push_tags(self, folder: str) -> bool:

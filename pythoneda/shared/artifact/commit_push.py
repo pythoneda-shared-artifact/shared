@@ -76,6 +76,7 @@ class CommitPush(ArtifactEventListener):
         """
         result = False
         try:
+            CommitPush.logger().info(f"Pushing changes in folder {folder}")
             GitPush(folder).push()
             result = True
         except GitPushFailed as err:

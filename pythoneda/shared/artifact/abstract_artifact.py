@@ -33,7 +33,7 @@ from pythoneda.shared.nix_flake import NixFlake
 from typing import Callable, List
 
 
-class AbstractArtifact(NixFlake, EventListener, PrimaryPort, abc.ABC):
+class AbstractArtifact(NixFlake, EventListener, abc.ABC):
     """
     Common logic for Artifacts.
 

@@ -198,7 +198,9 @@ class ArtifactEventListener(BaseObject):
                 try:
                     GitAdd(folder).add(flake)
                     GitCommit(folder).commit(f"Updated version to {result.value}")
-                    GitTag(folder).tag(result)
+                    GitTag(folder).create_tag2(
+                        result, f"Updated version to {result.value}"
+                    )
                 except GitAddFailed as err:
                     ArtifactEventListener.logger().error("Could not stage changes")
                     ArtifactEventListener.logger().error(err)
@@ -213,6 +215,7 @@ class ArtifactEventListener(BaseObject):
                     ArtifactEventListener.logger().error("Could not create tag")
                     ArtifactEventListener.logger().error(err)
                     result = None
+
         return result
 
     @classmethod
