@@ -19,10 +19,11 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 import os
+from pythoneda import BaseObject
 from pythoneda.shared.git import GitRepo, GitTag
 
 
-class RepositoryFolderHelper:
+class RepositoryFolderHelper(BaseObject):
     """
     Provides some utilities when working with repository folders.
 
@@ -63,10 +64,12 @@ class RepositoryFolderHelper:
         result = None
         parent = os.path.dirname(referenceRepositoryFolder)
         grand_parent = os.path.dirname(parent)
+        grand_grand_parent = os.path.dirname(grand_parent)
+        root = os.path.basename(grand_parent)
         owner, repo = GitRepo.extract_repo_owner_and_repo_name(url)
-        candidate = os.path.join(grand_parent, owner, repo)
+        candidate = os.path.join(grand_grand_parent, f"{root}-def", owner, repo)
         if os.path.isdir(os.path.join(candidate, ".git")) and (
-            GitRepo(candidate).url == url
+            GitRepo.from_folder(candidate).url == url
         ):
             result = candidate
         else:

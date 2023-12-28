@@ -52,7 +52,7 @@ class CommitTag(ArtifactEventListener):
         """
         Gets notified of a CommittedChangesPushed event.
         :param event: The event.
-        :type event: pythoneda.shared.artifact.events.CommitedChangesPushed
+        :type event: pythoneda.shared.artifact.events.CommittedChangesPushed
         :return: An event notifying the changes have been pushed.
         :rtype: pythoneda.shared.artifact.events.CommittedChangesTagged
         """

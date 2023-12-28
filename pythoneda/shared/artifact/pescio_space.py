@@ -31,7 +31,8 @@ class PescioSpace(Enum):
         - Define the different types of spaces.
 
     Collaborators:
-        - None. But this class is used both by pythoneda.application.bootstrap and pythoneda.application.pythoneda.PythonEDA
+        - None. But this class is used both by pythoneda.application.bootstrap
+        and pythoneda.application.pythoneda.PythonEDA
     """
 
     DECISION = auto()

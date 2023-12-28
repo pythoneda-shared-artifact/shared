@@ -80,7 +80,6 @@ class TagPush(ArtifactEventListener):
         :return: True if the operation succeeds.
         :rtype: bool
         """
-        result = False
         try:
             GitPush(folder).push_tags()
             result = True

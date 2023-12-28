@@ -18,11 +18,14 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+from .repository_folder_helper import RepositoryFolderHelper
 import os
 from pythoneda import attribute, BaseObject
 from pythoneda.shared.git import (
     GitAdd,
     GitAddFailed,
+    GitCheckAttr,
+    GitCheckAttrFailed,
     GitCommit,
     GitCommitFailed,
     GitRepo,
@@ -82,7 +85,7 @@ class ArtifactEventListener(BaseObject):
         """
         return GitRepo.from_folder(self.repository_folder).remote_url
 
-    def refers_to_my_decision_space(self, url: str) -> str:
+    def refers_to_my_decision_space(self, url: str) -> bool:
         """
         Checks whether given url matches the decision space of this artifact.
         :param url: The repository url.
@@ -158,6 +161,9 @@ class ArtifactEventListener(BaseObject):
         result = True
         home_path = os.environ.get("HOME")
         try:
+            ArtifactEventListener.logger().debug(
+                f"Running {home_path}/bin/update-sha256-nix-flake.sh -f {flake} -V {version} in {os.path.dirname(flake)}"
+            )
             subprocess.run(
                 [
                     f"{home_path}/bin/update-sha256-nix-flake.sh",
@@ -179,6 +185,40 @@ class ArtifactEventListener(BaseObject):
 
         return result
 
+    async def tag_flake_in(self, version: Version, folder: str) -> bool:
+        """
+        Updates the version and commits and tags the changes in the flake under given folder.
+        :param version: The new version.
+        :type version: pythoneda.git.Version
+        :param folder: The flake folder.
+        :type folder: str
+        :return: True if the operation succeeds; False otherwise.
+        :rtype: bool
+        """
+        result = False
+        flake = os.path.join(folder, "flake.nix")
+        # if there's a flake, change and commit the version change before tagging.
+        version_updated = await self.update_version_in_flake(version.value, flake)
+        if version_updated:
+            try:
+                ArtifactEventListener.logger().debug("Updating version in {folder}")
+                GitAdd(folder).add(flake)
+                GitCommit(folder).commit(f"Updated version to {version.value}")
+                GitTag(folder).create_tag(
+                    version, f"Updated version to {version.value}"
+                )
+                result = True
+            except GitAddFailed as err:
+                ArtifactEventListener.logger().error("Could not stage changes")
+                ArtifactEventListener.logger().error(err)
+            except GitCommitFailed as err:
+                ArtifactEventListener.logger().error("Could not commit staged changes")
+                ArtifactEventListener.logger().error(err)
+            except GitTagFailed as err:
+                ArtifactEventListener.logger().error("Could not create tag")
+                ArtifactEventListener.logger().error(err)
+        return result
+
     async def tag(self, folder: str) -> Version:
         """
         Creates a tag and emits a CommittedChangesTagged event.
@@ -191,31 +231,35 @@ class ArtifactEventListener(BaseObject):
         result = git_repo.increase_patch(True)
         # check if there's a flake in the root folder.
         if self.own_flake(folder):
-            flake = os.path.join(folder, "flake.nix")
-            # if there's a flake, change and commit the version change before tagging.
-            version_updated = await self.update_version_in_flake(result.value, flake)
-            if version_updated:
-                try:
-                    GitAdd(folder).add(flake)
-                    GitCommit(folder).commit(f"Updated version to {result.value}")
-                    GitTag(folder).create_tag2(
-                        result, f"Updated version to {result.value}"
-                    )
-                except GitAddFailed as err:
-                    ArtifactEventListener.logger().error("Could not stage changes")
-                    ArtifactEventListener.logger().error(err)
-                    result = None
-                except GitCommitFailed as err:
-                    ArtifactEventListener.logger().error(
-                        "Could not commit staged changes"
-                    )
-                    ArtifactEventListener.logger().error(err)
-                    result = None
-                except GitTagFailed as err:
-                    ArtifactEventListener.logger().error("Could not create tag")
-                    ArtifactEventListener.logger().error(err)
+            if not await self.tag_flake_in(result, folder):
+                result = None
+        else:
+            def_folder = self.find_def_repository_folder(folder)
+            if def_folder is None:
+                ArtifactEventListener.logger().error(
+                    f"Could not find def repository for {folder}"
+                )
+                result = None
+            else:
+                if not await self.tag_flake_in(result, def_folder):
                     result = None
 
+        return result
+
+    def find_def_repository_folder(self, folder: str) -> str:
+        """
+        Retrieves the folder of the repository with the definition of the repository cloned in given folder.
+        :param folder: The folder with the decision space repository.
+        :type folder: str
+        :return: The folder with the cloned repository of the definition of the source repository.
+        :rtype: str
+        """
+        result = None
+        try:
+            url = GitCheckAttr(folder).check_attr("def", ".gitattributes")
+            result = RepositoryFolderHelper.find_out_repository_folder(folder, url)
+        except GitCheckAttrFailed as err:
+            ArtifactEventListener.logger().error(err)
         return result
 
     @classmethod

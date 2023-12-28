@@ -74,7 +74,6 @@ class CommitPush(ArtifactEventListener):
         :return: True if the operation succeeds.
         :rtype: bool
         """
-        result = False
         try:
             CommitPush.logger().info(f"Pushing changes in folder {folder}")
             GitPush(folder).push()

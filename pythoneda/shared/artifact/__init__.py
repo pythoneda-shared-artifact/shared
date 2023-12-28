@@ -20,20 +20,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 __path__ = __import__("pkgutil").extend_path(__path__, __name__)
 
-from .abstract_artifact import AbstractArtifact
+from .artifact import Artifact
 from .architectural_role import ArchitecturalRole
 from .artifact_event_listener import ArtifactEventListener
+from .commit import Commit
 from .commit_push import CommitPush
 from .commit_tag import CommitTag
 from .hexagonal_layer import HexagonalLayer
-from .local_artifact import LocalArtifact
 from .pescio_space import PescioSpace
 from .python_package import PythonPackage
 from .repository_folder_helper import RepositoryFolderHelper
+from .stage_input_update import StageInputUpdate
 from .tag_push import TagPush
-
-# regular flow:
-# 0. (commit)
-# 1. CommitPush
-# 2. CommitTag
-# 3. TagPush
