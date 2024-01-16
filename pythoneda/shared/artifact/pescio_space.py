@@ -1,3 +1,4 @@
+# vim: set fileencoding=utf-8
 """
 pythoneda/shared/artifact/pescio_space.py
 
@@ -31,8 +32,8 @@ class PescioSpace(Enum):
         - Define the different types of spaces.
 
     Collaborators:
-        - None. But this class is used both by pythoneda.application.bootstrap
-        and pythoneda.application.pythoneda.PythonEDA
+        - None. But this class is used both by pythoneda.shared.application.bootstrap
+        and pythoneda.shared.application.pythoneda.PythonEDA
     """
 
     DECISION = auto()

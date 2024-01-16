@@ -1,3 +1,4 @@
+# vim: set fileencoding=utf-8
 """
 pythoneda/shared/artifact/artifact_event_listener.py
 
@@ -20,7 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from .repository_folder_helper import RepositoryFolderHelper
 import os
-from pythoneda import attribute, BaseObject
+from pythoneda.shared import attribute, BaseObject
 from pythoneda.shared.git import (
     GitAdd,
     GitAddFailed,
@@ -189,7 +190,7 @@ class ArtifactEventListener(BaseObject):
         """
         Updates the version and commits and tags the changes in the flake under given folder.
         :param version: The new version.
-        :type version: pythoneda.git.Version
+        :type version: pythoneda.shared.git.Version
         :param folder: The flake folder.
         :type folder: str
         :return: True if the operation succeeds; False otherwise.

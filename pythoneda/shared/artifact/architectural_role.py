@@ -1,3 +1,4 @@
+# vim: set fileencoding=utf-8
 """
 pythoneda/shared/artifact/architectural_role.py
 
@@ -31,7 +32,7 @@ class ArchitecturalRole(Enum):
         - Define the different types of architectural roles.
 
     Collaborators:
-        - None. But this class is used both by pythoneda.application.Bootstrap and pythoneda.application.PythonEDA
+        - None. But this class is used both by pythoneda.shared.application.Bootstrap and pythoneda.shared.application.PythonEDA
     """
 
     BOUNDED_CONTEXT = auto()

@@ -1,3 +1,4 @@
+# vim: set fileencoding=utf-8
 """
 pythoneda/shared/artifact/abstract_artifact.py
 
@@ -25,7 +26,7 @@ from .stage_input_update import StageInputUpdate
 from .tag_push import TagPush
 from .repository_folder_helper import RepositoryFolderHelper
 import abc
-from pythoneda import Event, EventListener, listen, PrimaryPort
+from pythoneda.shared import Event, EventListener, listen, PrimaryPort
 from pythoneda.shared.artifact.events import (
     ChangeStaged,
     CommittedChangesPushed,
@@ -179,7 +180,7 @@ class Artifact(NixFlake, EventListener, abc.ABC):
         """
         Checks whether given event refers to this artifact.
         :param event: The event to check.
-        :type event: pythoneda.Event
+        :type event: pythoneda.shared.Event
         """
         pass
 
@@ -187,7 +188,7 @@ class Artifact(NixFlake, EventListener, abc.ABC):
         """
         Extracts the affected input from given event.
         :param event: The event to analyze.
-        :type event: pythoneda.Event
+        :type event: pythoneda.shared.Event
         :return: The affected input, or None.
         :rtype: pythoneda.shared.nix_flake.NixFlakeInput
         """
@@ -293,11 +294,15 @@ class Artifact(NixFlake, EventListener, abc.ABC):
         proceed = self.event_refers_to_me(event)
 
         if proceed:
-            Artifact.logger().debug("1. StagedChangesCommitted -> CommittedChangesPushed")
+            Artifact.logger().debug(
+                "1. StagedChangesCommitted -> CommittedChangesPushed"
+            )
         else:
             dep = self.extract_input(event)
             if dep is not None:
-                Artifact.logger().debug("11. StagedChangesCommitted -> CommittedChangesPushed")
+                Artifact.logger().debug(
+                    "11. StagedChangesCommitted -> CommittedChangesPushed"
+                )
                 proceed = True
         if proceed:
             Artifact.logger().debug(
@@ -321,11 +326,15 @@ class Artifact(NixFlake, EventListener, abc.ABC):
         proceed = self.event_refers_to_me(event)
 
         if proceed:
-            Artifact.logger().debug("2. CommittedChangesPushed -> CommittedChangesTagged")
+            Artifact.logger().debug(
+                "2. CommittedChangesPushed -> CommittedChangesTagged"
+            )
         else:
             dep = self.extract_input(event)
             if dep is not None:
-                Artifact.logger().debug("7. CommittedChangesPushed -> CommittedChangesTagged")
+                Artifact.logger().debug(
+                    "7. CommittedChangesPushed -> CommittedChangesTagged"
+                )
                 proceed = True
         if proceed:
             Artifact.logger().debug(
