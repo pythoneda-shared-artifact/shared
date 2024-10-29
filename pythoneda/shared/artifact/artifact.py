@@ -19,13 +19,10 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
+import abc
 from .commit import Commit
 from .commit_push import CommitPush
 from .commit_tag import CommitTag
-from .stage_input_update import StageInputUpdate
-from .tag_push import TagPush
-from .repository_folder_helper import RepositoryFolderHelper
-import abc
 from pythoneda.shared import Event, EventListener, listen, PrimaryPort
 from pythoneda.shared.artifact.events import (
     ChangeStaged,
@@ -35,7 +32,10 @@ from pythoneda.shared.artifact.events import (
     TagPushed,
 )
 from pythoneda.shared.git import GitRepo
-from pythoneda.shared.nix_flake import NixFlake, NixFlakeInput
+from pythoneda.shared.nix.flake import NixFlake, NixFlakeInput
+from .repository_folder_helper import RepositoryFolderHelper
+from .stage_input_update import StageInputUpdate
+from .tag_push import TagPush
 from typing import Callable, List
 
 
@@ -78,7 +78,7 @@ class Artifact(NixFlake, EventListener, abc.ABC):
         :param urlFor: The function to obtain the url of the artifact for a given version.
         :type urlFor: Callable[[str],str]
         :param inputs: The flake inputs.
-        :type inputs: List[pythoneda.shared.nix_flake.NixFlakeInput]
+        :type inputs: List[pythoneda.shared.nix.flake.NixFlakeInput]
         :param templateSubfolder: The template subfolder, if any.
         :type templateSubfolder: str
         :param description: The flake description.
@@ -190,7 +190,7 @@ class Artifact(NixFlake, EventListener, abc.ABC):
         :param event: The event to analyze.
         :type event: pythoneda.shared.Event
         :return: The affected input, or None.
-        :rtype: pythoneda.shared.nix_flake.NixFlakeInput
+        :rtype: pythoneda.shared.nix.flake.NixFlakeInput
         """
         result = None
         for aux in self.inputs:
@@ -398,6 +398,8 @@ class Artifact(NixFlake, EventListener, abc.ABC):
             result = await StageInputUpdate(self.repository_folder).listen(event)
 
         return result
+
+
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et
 # Local Variables:
 # mode: python
