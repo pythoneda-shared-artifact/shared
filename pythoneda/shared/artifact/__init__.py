@@ -21,7 +21,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 __path__ = __import__("pkgutil").extend_path(__path__, __name__)
 
-from .artifact import Artifact
+from .abstract_artifact import AbstractArtifact
 from .architectural_role import ArchitecturalRole
 from .artifact_event_listener import ArtifactEventListener
 from .commit import Commit
@@ -33,6 +33,7 @@ from .python_package import PythonPackage
 from .repository_folder_helper import RepositoryFolderHelper
 from .stage_input_update import StageInputUpdate
 from .tag_push import TagPush
+
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et
 # Local Variables:
 # mode: python

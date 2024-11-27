@@ -19,7 +19,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
-from .artifact import Artifact
+from .abstract_artifact import AbstractArtifact
 from .architectural_role import ArchitecturalRole
 from .hexagonal_layer import HexagonalLayer
 from .pescio_space import PescioSpace
@@ -27,7 +27,7 @@ import abc
 from typing import Callable, List
 
 
-class PythonPackage(Artifact, abc.ABC):
+class PythonPackage(AbstractArtifact, abc.ABC):
     """
     Represents a Python package.
 
@@ -103,6 +103,8 @@ class PythonPackage(Artifact, abc.ABC):
         :rtype: pythoneda.shared.artifact.HexagonalLayer
         """
         return self._hexagonal_layer
+
+
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et
 # Local Variables:
 # mode: python

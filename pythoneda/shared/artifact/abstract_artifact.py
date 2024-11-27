@@ -39,11 +39,11 @@ from .tag_push import TagPush
 from typing import Callable, List
 
 
-class Artifact(NixFlake, EventListener, abc.ABC):
+class AbstractArtifact(NixFlake, EventListener, abc.ABC):
     """
     Represents Artifacts.
 
-    Class name: Artifact
+    Class name: BaseArtifact
 
     Responsibilities:
         - Provide common logic for Artifacts.
