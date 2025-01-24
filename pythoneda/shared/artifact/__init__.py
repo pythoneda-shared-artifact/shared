@@ -36,9 +36,6 @@ from .python_package import PythonPackage
 from .stage_input_update import StageInputUpdate
 from .tag_push import TagPush
 
-print("Finished pythoneda/shared/artifact/__init__.py", file=sys.stderr)
-
-
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et
 # Local Variables:
 # mode: python

@@ -20,6 +20,7 @@ You should have received a copy of the GNU General Public License
 along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 from enum import Enum, auto
+from typing import List
 
 
 class HexagonalLayer(Enum):
@@ -39,6 +40,24 @@ class HexagonalLayer(Enum):
     DOMAIN = auto()
     INFRASTRUCTURE = auto()
     APPLICATION = auto()
+
+    def all_but(self) -> List:
+        """
+        Returns all layers but this one.
+        :return: All layers but this one.
+        :rtype: List
+        """
+        return [l for l in HexagonalLayer if l != self]
+
+    def __str__(self) -> str:
+        """
+        Returns the string representation of the layer.
+        :return: The string representation of the layer.
+        :rtype: str
+        """
+        return self.name
+
+
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et
 # Local Variables:
 # mode: python
