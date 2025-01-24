@@ -21,18 +21,23 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 """
 __path__ = __import__("pkgutil").extend_path(__path__, __name__)
 
-from .abstract_artifact import AbstractArtifact
-from .architectural_role import ArchitecturalRole
+import sys
+
+from .repository_folder_helper import RepositoryFolderHelper
 from .artifact_event_listener import ArtifactEventListener
 from .commit import Commit
 from .commit_push import CommitPush
 from .commit_tag import CommitTag
+from .abstract_artifact import AbstractArtifact
+from .architectural_role import ArchitecturalRole
 from .hexagonal_layer import HexagonalLayer
 from .pescio_space import PescioSpace
 from .python_package import PythonPackage
-from .repository_folder_helper import RepositoryFolderHelper
 from .stage_input_update import StageInputUpdate
 from .tag_push import TagPush
+
+print("Finished pythoneda/shared/artifact/__init__.py", file=sys.stderr)
+
 
 # vim: syntax=python ts=4 sw=4 sts=4 tw=79 sr et
 # Local Variables:
